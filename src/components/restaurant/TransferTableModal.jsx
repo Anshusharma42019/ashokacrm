@@ -16,7 +16,7 @@ const TransferTableModal = ({ isOpen, onClose, selectedOrder, onTransferComplete
   const fetchTables = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('/api/restaurant/tables', {
+      const response = await axios.get('/api/restaurant/tables/all', {
         headers: { Authorization: `Bearer ${token}` }
       });
       const tablesData = Array.isArray(response.data) ? response.data : (response.data.tables || []);

@@ -423,7 +423,7 @@ const Order = () => {
     const id = typeof vendorId === 'object' ? vendorId._id : vendorId;
     
     const vendor = vendors.find(v => v._id === id);
-    return vendor?.name || 'N/A';
+    return vendor?.vendorName || vendor?.name || 'N/A';
   };
 
 
