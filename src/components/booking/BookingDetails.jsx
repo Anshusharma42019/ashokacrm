@@ -320,16 +320,7 @@ const BookingDetails = () => {
             <ArrowLeft size={20} className="mr-2" />
             Back to Bookings
           </button>
-          <div className="flex items-center gap-4">
-            <h1 className="text-2xl font-bold text-gray-800">Booking Details</h1>
-            <button
-              onClick={() => navigate(`/edit-booking/${booking.grcNo}`, { state: { editBooking: booking } })}
-              className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              <Edit2 size={18} className="mr-2" />
-              Edit
-            </button>
-          </div>
+          <h1 className="text-2xl font-bold text-gray-800">Booking Details</h1>
         </div>
 
         {/* Main Content */}
