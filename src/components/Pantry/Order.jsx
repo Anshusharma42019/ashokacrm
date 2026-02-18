@@ -255,6 +255,19 @@ const Order = () => {
         )
       );
       
+      // Display detailed out-of-stock error
+      if (error.response?.data?.outOfStockItems) {
+        const items = error.response.data.outOfStockItems;
+        const itemDetails = items.map(item => 
+          `• ${item.name}: Requested ${item.requested}, Available ${item.available} (Short by ${item.shortage})`
+        ).join('\n');
+        showToast.error(
+          `Cannot approve order - Items are out of stock:\n${itemDetails}\n\nPlease restock these items first.`,
+          { duration: 8000 }
+        );
+        return;
+      }
+      
       // If that fails, try to get the full order and update it properly
       try {
         const { data } = await axios.get(`/api/pantry/orders`, {
@@ -1295,12 +1308,20 @@ const Order = () => {
                             <Trash2 size={16} />
                           </button>
                         )}
-                        {order.status === 'pending' && (
+                        {order.status === 'pending' && order.orderType !== 'Kitchen to Pantry' && (
                           <button
                             onClick={() => updateOrderStatus(order._id, 'approved')}
                             className="text-green-600 hover:text-green-900 text-xs"
                           >
-                            {order.orderType === 'Kitchen to Pantry' ? 'Approve & Send to Kitchen' : 'Approve'}
+                            Approve
+                          </button>
+                        )}
+                        {order.status === 'approved' && order.orderType === 'Kitchen to Pantry' && (
+                          <button
+                            onClick={() => updateOrderStatus(order._id, 'fulfilled')}
+                            className="text-green-600 hover:text-green-900 text-xs"
+                          >
+                            Approve & Send to Kitchen
                           </button>
                         )}
                         {order.status === 'approved' && order.orderType === 'Pantry to vendor' && (
@@ -1512,12 +1533,20 @@ const Order = () => {
                     Delete
                   </button>
                 )}
-                {order.status === 'pending' && (
+                {order.status === 'pending' && order.orderType !== 'Kitchen to Pantry' && (
                   <button
                     onClick={() => updateOrderStatus(order._id, 'approved')}
                     className="px-3 py-1 text-sm bg-green-100 text-green-700 rounded-md hover:bg-green-200"
                   >
-                    {order.orderType === 'Kitchen to Pantry' ? 'Approve & Send to Kitchen' : 'Approve'}
+                    Approve
+                  </button>
+                )}
+                {order.status === 'approved' && order.orderType === 'Kitchen to Pantry' && (
+                  <button
+                    onClick={() => updateOrderStatus(order._id, 'fulfilled')}
+                    className="px-3 py-1 text-sm bg-green-100 text-green-700 rounded-md hover:bg-green-200"
+                  >
+                    Approve & Send to Kitchen
                   </button>
                 )}
                 {order.status === 'approved' && order.orderType === 'Pantry to vendor' && (

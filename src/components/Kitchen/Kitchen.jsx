@@ -19,67 +19,36 @@ const Kitchen = () => {
   });
 
   useEffect(() => {
-    fetchData();
+    fetchOrders();
   }, []);
 
-  const fetchData = async (refreshOnly = false) => {
+  const fetchOrders = async () => {
     setLoading(true);
     try {
-      // Only fetch items and vendors on initial load, not on refresh
-      if (!refreshOnly) {
-        // Fetch items
-        try {
-          const itemsRes = await axios.get('/api/pantry/items', { 
-            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } 
-          });
-          const itemsData = itemsRes.data;
-          setItems(Array.isArray(itemsData) ? itemsData : (itemsData?.items || itemsData?.data || []));
-        } catch (error) {
-          console.log('Items fetch failed:', error);
-          setItems([]);
-        }
-
-        // Fetch vendors
-        try {
-          const vendorsRes = await axios.get('/api/vendor/all', { 
-            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } 
-          });
-          const vendorsData = vendorsRes.data;
-          setVendors(Array.isArray(vendorsData) ? vendorsData : (vendorsData?.vendors || vendorsData?.data || []));
-        } catch (error) {
-          console.log('Vendors fetch failed:', error);
-          setVendors([]);
-        }
-
-
-
-        // Auto-sync missing kitchen orders first (only on initial load)
-        try {
-          await axios.post('/api/kitchen/sync', {}, {
-            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-          });
-          console.log('✅ Auto-sync completed');
-        } catch (error) {
-          console.log('Auto-sync failed (may not be available on server):', error.response?.status);
-        }
-      }
-
-      // Always fetch kitchen orders (fast query with pagination)
-      try {
-        const kitchenOrdersRes = await axios.get('/api/kitchen?legacy=true&limit=20', { 
-          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } 
-        });
-        
-        const kitchenOrders = kitchenOrdersRes.data || [];
-        setOrders(Array.isArray(kitchenOrders) ? kitchenOrders : []);
-      } catch (error) {
-        console.log('Orders fetch failed:', error);
-        setOrders([]);
-      }
+      const kitchenOrdersRes = await axios.get('/api/kitchen?legacy=true&limit=20', { 
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } 
+      });
+      
+      const kitchenOrders = kitchenOrdersRes.data || [];
+      setOrders(Array.isArray(kitchenOrders) ? kitchenOrders : []);
     } catch (error) {
-      console.error('Error fetching data:', error);
+      console.log('Orders fetch failed:', error);
+      setOrders([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchItems = async () => {
+    try {
+      const itemsRes = await axios.get('/api/pantry/items', { 
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } 
+      });
+      const itemsData = itemsRes.data;
+      setItems(Array.isArray(itemsData) ? itemsData : (itemsData?.items || itemsData?.data || []));
+    } catch (error) {
+      console.log('Items fetch failed:', error);
+      setItems([]);
     }
   };
   
@@ -113,7 +82,7 @@ const Kitchen = () => {
         showToast.success('Order created successfully');
       }
       resetForm();
-      fetchData();
+      fetchOrders();
     } catch (error) {
       showToast.error(error.response?.data?.message || 'Failed to save order');
     } finally {
@@ -128,7 +97,7 @@ const Kitchen = () => {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
       });
       showToast.success('Order deleted successfully');
-      fetchData();
+      fetchOrders();
     } catch (error) {
       showToast.error('Failed to delete order');
     }
@@ -142,14 +111,31 @@ const Kitchen = () => {
         { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
       );
       showToast.success(`Order ${newStatus} successfully`);
-      fetchData();
+      fetchOrders();
     } catch (error) {
+      console.error('Status update error:', error.response?.data);
+      
+      // Display detailed out-of-stock error
+      if (error.response?.data?.outOfStockItems) {
+        const items = error.response.data.outOfStockItems;
+        const itemDetails = items.map(item => 
+          `• ${item.name}: Requested ${item.requested}, Available ${item.available} (Short by ${item.shortage})`
+        ).join('\n');
+        showToast.error(
+          `Cannot mark as delivered - Items are out of stock in pantry:\n${itemDetails}\n\nPlease restock pantry items first.`,
+          { duration: 8000 }
+        );
+        return;
+      }
+      
       showToast.error('Failed to update order status');
-      console.error('Status update error:', error);
     }
   };
 
-  const handleEdit = (order) => {
+  const handleEdit = async (order) => {
+    if (items.length === 0) {
+      await fetchItems();
+    }
     setEditingOrder(order);
     setFormData({
       items: order.items || [{ itemId: '', quantity: '1', unitPrice: 0 }],
@@ -227,7 +213,7 @@ const Kitchen = () => {
         </div>
         <div className="flex gap-2">
           <button
-            onClick={() => fetchData(true)}
+            onClick={() => fetchOrders()}
             className="bg-secondary text-text px-4 py-2 rounded-lg hover:bg-hover flex items-center gap-2 shadow-lg transition-all duration-200"
             disabled={loading}
           >
@@ -236,7 +222,10 @@ const Kitchen = () => {
           </button>
 
           <button
-            onClick={() => setShowForm(true)}
+            onClick={async () => {
+              if (items.length === 0) await fetchItems();
+              setShowForm(true);
+            }}
             className="bg-primary text-text px-4 py-2 rounded-lg hover:bg-hover flex items-center gap-2 shadow-lg transition-all duration-200"
           >
             <Plus size={20} />
