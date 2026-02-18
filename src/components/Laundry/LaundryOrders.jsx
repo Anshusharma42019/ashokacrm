@@ -61,6 +61,11 @@ const LaundryOrders = () => {
       setIsInitialLoading(false);
     };
     loadInitialData();
+    
+    // Refresh on window focus
+    const handleFocus = () => fetchOrders();
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
   }, []);
   
   useEffect(() => {
@@ -79,11 +84,16 @@ const LaundryOrders = () => {
       if (filters.search) queryParams.append('search', filters.search);
       if (filters.startDate) queryParams.append('startDate', filters.startDate);
       if (filters.endDate) queryParams.append('endDate', filters.endDate);
+      queryParams.append('_t', Date.now());
       
       const url = `${import.meta.env.VITE_API_URL}/api/laundry/all${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
       
       const response = await fetch(url, {
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        }
       });
       const data = await response.json();
       setOrders(Array.isArray(data) ? data : (data.orders || []));
@@ -221,7 +231,7 @@ const LaundryOrders = () => {
   };
 
   const addNewItem = () => {
-    setEditItems([...editItems, { itemName: '', quantity: 1, price: 0, rateId: '' }]);
+    setEditItems([...editItems, { itemName: '', quantity: 1, price: 0, rateId: '', status: 'pending' }]);
   };
 
   const handleItemSelect = (index, selectedItemId) => {
@@ -246,6 +256,29 @@ const LaundryOrders = () => {
 
   const removeItem = (index) => {
     setEditItems(editItems.filter((_, i) => i !== index));
+  };
+
+  const handleItemStatusUpdate = async (orderId, itemId, newStatus) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/laundry/item/${itemId}/status`, {
+        method: 'PATCH',
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ status: newStatus })
+      });
+      
+      if (response.ok) {
+        toast.success('Item status updated successfully');
+        fetchOrders();
+      } else {
+        toast.error('Failed to update item status');
+      }
+    } catch (error) {
+      toast.error('Failed to update item status');
+    }
   };
 
   const handleStatusUpdate = async (orderId, newStatus) => {
@@ -328,10 +361,16 @@ const LaundryOrders = () => {
   };
 
   const handleLoss = (orderId) => {
-    // Find order from existing orders array instead of API call
     const order = orders.find(o => o._id === orderId);
     if (!order) {
       toast.error('Order not found');
+      return;
+    }
+    
+    // Check if any items are picked up or later
+    const eligibleItems = order.items?.filter(item => ['picked_up', 'ready', 'delivered'].includes(item.status));
+    if (!eligibleItems || eligibleItems.length === 0) {
+      toast.error('Loss reports can only be filed for items that have been picked up');
       return;
     }
     
@@ -344,8 +383,8 @@ const LaundryOrders = () => {
     toast.info('Payment processing feature coming soon');
   };
 
-  const handleLossReportSuccess = () => {
-    fetchOrders();
+  const handleLossReportSuccess = async () => {
+    await fetchOrders();
   };
 
   if (isInitialLoading) {
@@ -588,20 +627,22 @@ const LaundryOrders = () => {
                         <div>{order.items?.length || 0} items</div>
                         <div className="text-xs space-y-1">
                           {order.items?.map((item, idx) => (
-                            <div key={idx} className="flex justify-between items-center">
+                            <div key={idx} className="flex justify-between items-center gap-2">
                               <span className={`${item.status === 'cancelled' || item.status === 'lost' ? 'text-red-600 line-through' : 'text-gray-700'}`}>
                                 {item.itemName} {item.status === 'lost' ? '(Lost)' : item.status === 'cancelled' ? '(Cancelled)' : ''}
                               </span>
-                              <span className={`px-1 py-0.5 rounded text-xs ${
-                                item.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
-                                item.status === 'picked_up' ? 'bg-blue-100 text-blue-700' :
-                                item.status === 'ready' ? 'bg-green-100 text-green-700' :
-                                item.status === 'delivered' ? 'bg-gray-100 text-gray-700' :
-                                item.status === 'lost' ? 'bg-orange-100 text-orange-700' :
-                                'bg-red-100 text-red-700'
-                              }`}>
-                                {item.status}
-                              </span>
+                              <select
+                                value={item.status}
+                                onChange={(e) => handleItemStatusUpdate(order._id, item._id, e.target.value)}
+                                className="text-xs border rounded px-1 py-0.5"
+                              >
+                                <option value="pending">Pending</option>
+                                <option value="picked_up">Picked Up</option>
+                                <option value="ready">Ready</option>
+                                <option value="delivered">Delivered</option>
+                                <option value="cancelled">Cancelled</option>
+                                <option value="lost">Lost</option>
+                              </select>
                             </div>
                           ))}
                         </div>
@@ -678,8 +719,8 @@ const LaundryOrders = () => {
                             >
                               Edit
                             </button>
-                            {/* Only show Loss button if there are items that are not lost */}
-                            {order.items?.some(item => item.status !== 'lost') && (
+                            {/* Only show Loss button if there are items that are picked up or later */}
+                            {order.items?.some(item => ['picked_up', 'ready', 'delivered'].includes(item.status)) && (
                               <button 
                                 onClick={() => handleLoss(order._id)} 
                                 className="px-3 py-1.5 bg-secondary hover:bg-primary text-white text-xs rounded-lg transition-all duration-200 transform hover:-translate-y-0.5 shadow-sm hover:shadow-md"
@@ -746,7 +787,7 @@ const LaundryOrders = () => {
                       </span>
                     </div>
                     <div className="flex flex-col items-end">
-                      <span>₹{item.calculatedAmount || (item.price * item.quantity)}</span>
+                      <span>₹{item.calculatedAmount !== undefined && item.calculatedAmount !== null ? item.calculatedAmount : (item.price && item.quantity ? item.price * item.quantity : 0)}</span>
                       <span className={`px-2 py-1 rounded text-xs ${
                         item.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
                         item.status === 'picked_up' ? 'bg-blue-100 text-blue-700' :

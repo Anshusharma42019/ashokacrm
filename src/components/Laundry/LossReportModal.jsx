@@ -80,7 +80,7 @@ const LossReportModal = ({ isOpen, onClose, selectedOrder, onSuccess }) => {
         
         toast.success('Loss report submitted successfully');
         setLossFormData({ selectedItems: [], lossNote: '' });
-        onSuccess();
+        await onSuccess();
         onClose();
       } else {
         const errorData = await response.json();
@@ -116,7 +116,7 @@ const LossReportModal = ({ isOpen, onClose, selectedOrder, onSuccess }) => {
           <div>
             <label className="block text-sm font-medium mb-2">Select Items</label>
             <div className="border rounded p-3 max-h-40 overflow-y-auto">
-              {selectedOrder.items?.map((item, index) => (
+              {selectedOrder.items?.filter(item => ['picked_up', 'ready', 'delivered'].includes(item.status)).map((item, index) => (
                 <div key={index} className="flex items-center gap-2 mb-2">
                   <input
                     type="checkbox"
@@ -130,6 +130,9 @@ const LossReportModal = ({ isOpen, onClose, selectedOrder, onSuccess }) => {
                   </label>
                 </div>
               ))}
+              {selectedOrder.items?.filter(item => ['picked_up', 'ready', 'delivered'].includes(item.status)).length === 0 && (
+                <p className="text-sm text-gray-500">No items available for loss report. Items must be picked up first.</p>
+              )}
             </div>
           </div>
           
