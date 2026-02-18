@@ -1221,6 +1221,11 @@ const AllBookings = ({ setActiveTab }) => {
                     try {
                       const token = localStorage.getItem('token');
                       
+                      if (!paymentData.orderId) {
+                        showToast.error('Invalid order ID');
+                        return;
+                      }
+                      
                       const billResponse = await axios.post('/api/bills/create', {
                         orderId: paymentData.orderId,
                         discount: 0,
@@ -1277,6 +1282,11 @@ const AllBookings = ({ setActiveTab }) => {
                     try {
                       const token = localStorage.getItem('token');
                       
+                      if (!paymentData.orderId) {
+                        showToast.error('Invalid order ID');
+                        return;
+                      }
+                      
                       const billResponse = await axios.post('/api/bills/create', {
                         orderId: paymentData.orderId,
                         discount: 0,
@@ -1332,6 +1342,11 @@ const AllBookings = ({ setActiveTab }) => {
                     
                     try {
                       const token = localStorage.getItem('token');
+                      
+                      if (!paymentData.orderId) {
+                        showToast.error('Invalid order ID');
+                        return;
+                      }
                       
                       const billResponse = await axios.post('/api/bills/create', {
                         orderId: paymentData.orderId,

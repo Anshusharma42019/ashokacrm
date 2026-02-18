@@ -867,6 +867,15 @@ const App = () => {
         ...prev,
         [name]: type === 'checkbox' ? checked : value
       }));
+      
+      // Save GST rates to localStorage when changed
+      if (name === 'cgstRate' || name === 'sgstRate') {
+        const currentRates = JSON.parse(localStorage.getItem('defaultGstRates') || '{}');
+        localStorage.setItem('defaultGstRates', JSON.stringify({
+          ...currentRates,
+          [name]: type === 'checkbox' ? checked : value
+        }));
+      }
     }
   };
 
