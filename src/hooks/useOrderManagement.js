@@ -126,14 +126,19 @@ export const useOrderManagement = (location) => {
       // Fetch restaurant staff
       try {
         const token = localStorage.getItem('token');
-        const usersRes = await axios.get('/api/users', {
+        const usersRes = await axios.get('/api/users/all', {
           headers: { Authorization: `Bearer ${token}` }
         });
         
-        const usersData = usersRes.data || [];
+        console.log('All users response:', usersRes.data);
+        const usersData = usersRes.data.users || usersRes.data || [];
+        console.log('Users data:', usersData);
         
         const restaurantStaff = usersData
-          .filter(user => user.role === 'restaurant' && user.restaurantRole === 'staff')
+          .filter(user => {
+            console.log('Checking user:', user.username, 'Role:', user.role, 'RestaurantRole:', user.restaurantRole);
+            return user.role === 'RESTAURANT' && user.restaurantRole === 'staff';
+          })
           .map(member => ({
             _id: member._id,
             name: member.username,
@@ -141,6 +146,7 @@ export const useOrderManagement = (location) => {
             role: member.role
           }));
         
+        console.log('Filtered restaurant staff:', restaurantStaff);
         setStaff(restaurantStaff);
       } catch (error) {
         console.error('Error fetching staff:', error);

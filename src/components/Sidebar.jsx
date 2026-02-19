@@ -227,7 +227,7 @@ const Sidebar = () => {
         children: [
           { label: "Menu Items", path: "/inroomdinein/menu-items", icon: FileText },
           { label: "Create Order", path: "/inroomdinein/create-order", icon: ShoppingCart },
-          { label: "Live Orders", path: "/inroomdinein/live-orders", icon: ChefHat },
+          { label: "Chef Dashboard", path: "/restaurant/chef-dashboard", icon: ChefHat },
           { label: "All Orders", path: "/inroomdinein/all-orders", icon: ClipboardList },
         ],
       });

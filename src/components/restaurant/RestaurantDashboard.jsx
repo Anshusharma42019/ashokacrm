@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
     ShoppingCart, CalendarCheck, DollarSign, Utensils, Table, ListChecks, 
     TrendingUp, Trash2, Soup, Clock, CheckCircle, BarChart3
@@ -59,7 +60,7 @@ const KitchenStatusWidget = ({ kotData, loading }) => {
     const [isModalOpen, setIsModalOpen] = React.useState(false);
     
     const kitchenStats = {
-        pending: kotData.filter(kot => kot.status === 'pending').length,
+        pending: kotData.filter(kot => kot.status === 'pending' || kot.status === 'new').length,
         preparing: kotData.filter(kot => kot.status === 'preparing' || kot.status === 'in-progress').length,
         ready: kotData.filter(kot => kot.status === 'ready').length
     };
@@ -320,7 +321,7 @@ const QUICK_ACCESS_LINKS = [
     { 
         name: "Create Order", 
         icon: ShoppingCart, 
-        link: "/book-table", 
+        link: "/restaurant/create-order", 
         color: "#22c55e",
         description: "Create a new food order",
         shortcut: "Ctrl+N" 
@@ -328,23 +329,15 @@ const QUICK_ACCESS_LINKS = [
     { 
         name: "All Orders", 
         icon: ListChecks, 
-        link: "/resturant/all-orders", 
+        link: "/restaurant/orders", 
         color: "#3b82f6",
         description: "View and manage orders",
         shortcut: "Ctrl+O"
     },
     { 
-        name: "Reservation", 
-        icon: CalendarCheck, 
-        link: "/resturant/reservation", 
-        color: "#8b5cf6",
-        description: "Manage table bookings",
-        shortcut: "Ctrl+R"
-    },
-    { 
         name: "Billing", 
         icon: DollarSign, 
-        link: "/billing", 
+        link: "/cash-management", 
         color: "#f59e0b",
         description: "Process payments",
         shortcut: "Ctrl+B"
@@ -352,7 +345,7 @@ const QUICK_ACCESS_LINKS = [
     { 
         name: "Table Status", 
         icon: Table, 
-        link: "/table", 
+        link: "/restaurant/tables", 
         color: "#ef4444",
         description: "View table availability",
         shortcut: "Ctrl+T"
@@ -360,7 +353,7 @@ const QUICK_ACCESS_LINKS = [
     { 
         name: "Kitchen View", 
         icon: Utensils, 
-        link: "/kitchen", 
+        link: "/restaurant/kitchen-kot", 
         color: "#06b6d4",
         description: "Monitor kitchen orders",
         shortcut: "Ctrl+K"
@@ -373,6 +366,7 @@ const QUICK_ACCESS_LINKS = [
 // ----------------------------------------------------------------------
 const DashboardContent = () => {
     const { axios } = useAppContext();
+    const navigate = useNavigate();
     const [stats, setStats] = useState({
         todayOrders: 0,
         totalRevenue: 0,
@@ -464,22 +458,31 @@ const DashboardContent = () => {
             const ordersData = Array.isArray(ordersRes.data) ? ordersRes.data : [];
             setOrders(ordersData);
             
-            // Fetch KOT data
+            // Fetch KOT data - Use restaurant orders instead
             try {
-                const kotRes = await axios.get('/api/kot/all', {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
-                const kotDataArray = Array.isArray(kotRes.data) ? kotRes.data : kotRes.data?.kots || kotRes.data?.data || [];
-                setKotData(kotDataArray);
-            } catch (error) {
-                console.log('KOT API failed, using mock data');
-                setKotData([
-                    { _id: '1', status: 'pending', tableNumber: '1' },
-                    { _id: '2', status: 'preparing', tableNumber: '2' },
-                    { _id: '3', status: 'ready', tableNumber: '3' },
-                    { _id: '4', status: 'pending', tableNumber: '4' },
-                    { _id: '5', status: 'preparing', tableNumber: '5' }
+                // Fetch both restaurant and in-room orders for kitchen status
+                const [restaurantOrdersRes, inRoomOrdersRes] = await Promise.all([
+                    axios.get('/api/restaurant-orders/all', {
+                        headers: { Authorization: `Bearer ${token}` }
+                    }),
+                    axios.get('/api/inroom-orders/all', {
+                        headers: { Authorization: `Bearer ${token}` }
+                    })
                 ]);
+                
+                const restaurantOrders = Array.isArray(restaurantOrdersRes.data) ? restaurantOrdersRes.data : [];
+                const inRoomOrders = Array.isArray(inRoomOrdersRes.data) ? inRoomOrdersRes.data : [];
+                
+                // Combine all orders for kitchen status
+                const allKitchenOrders = [...restaurantOrders, ...inRoomOrders].filter(order => 
+                    ['pending', 'preparing', 'in-progress', 'ready', 'new'].includes(order.status)
+                );
+                
+                setKotData(allKitchenOrders);
+                console.log('Kitchen Orders:', allKitchenOrders);
+            } catch (error) {
+                console.log('Kitchen orders fetch failed:', error);
+                setKotData([]);
             }
             
             // Fetch wastage data - try official public API first, then fall back to local relative endpoint
@@ -533,37 +536,17 @@ const DashboardContent = () => {
                 ]);
             }
             
-            // Fetch tables - try multiple endpoints
+            // Fetch tables
             let tablesData = [];
             try {
-                const tablesRes = await axios.get('/api/restaurant/tables', {
+                const tablesRes = await axios.get('/api/restaurant/tables/all', {
                     headers: { Authorization: `Bearer ${token}` }
                 });
                 tablesData = Array.isArray(tablesRes.data) ? tablesRes.data : tablesRes.data?.tables || tablesRes.data?.data || [];
+                console.log('Tables fetched:', tablesData);
             } catch (error) {
-                console.log('First endpoint failed, trying alternative...');
-                try {
-                    const tablesRes = await axios.get('/api/tables/all', {
-                        headers: { Authorization: `Bearer ${token}` }
-                    });
-                    tablesData = Array.isArray(tablesRes.data) ? tablesRes.data : tablesRes.data?.tables || tablesRes.data?.data || [];
-                } catch (error2) {
-                    console.log('Second endpoint failed, using mock data');
-                }
-            }
-            
-            // Use mock data if no tables found
-            if (tablesData.length === 0) {
-                tablesData = [
-                    { _id: '1', tableNumber: '1', status: 'available', capacity: 4 },
-                    { _id: '2', tableNumber: '2', status: 'occupied', capacity: 2 },
-                    { _id: '3', tableNumber: '3', status: 'cleaning', capacity: 6 },
-                    { _id: '4', tableNumber: '4', status: 'available', capacity: 4 },
-                    { _id: '5', tableNumber: '5', status: 'available', capacity: 8 },
-                    { _id: '6', tableNumber: '6', status: 'occupied', capacity: 2 },
-                    { _id: '7', tableNumber: '7', status: 'available', capacity: 4 },
-                    { _id: '8', tableNumber: '8', status: 'cleaning', capacity: 6 }
-                ];
+                console.error('Tables fetch failed:', error);
+                tablesData = [];
             }
             
             setTables(tablesData);
@@ -624,14 +607,7 @@ const DashboardContent = () => {
             setStats(dashboardStats);
         } catch (error) {
             console.error('Error fetching dashboard data:', error);
-            // Set mock data on error
-            setTables([
-                { _id: '1', tableNumber: '1', status: 'available', capacity: 4 },
-                { _id: '2', tableNumber: '2', status: 'occupied', capacity: 2 },
-                { _id: '3', tableNumber: '3', status: 'cleaning', capacity: 6 },
-                { _id: '4', tableNumber: '4', status: 'available', capacity: 4 },
-                { _id: '5', tableNumber: '5', status: 'available', capacity: 8 }
-            ]);
+            setTables([]);
         } finally {
             setLoading(false);
         }
@@ -669,14 +645,14 @@ const DashboardContent = () => {
                         </svg>
                     </button>
                 </h2>
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
                     {QUICK_ACCESS_LINKS.map((item) => (
-                        <a 
+                        <div
                             key={item.name}
-                            href={item.link} 
+                            onClick={() => navigate(item.link)}
                             className="group relative bg-white p-6 rounded-xl shadow-sm border border-gray-100
                                 transition-all duration-300 hover:shadow-lg hover:border-gray-200
-                                flex flex-col items-center justify-center"
+                                flex flex-col items-center justify-center cursor-pointer"
                         >
                             {/* Icon Container */}
                             <div 
@@ -709,7 +685,7 @@ const DashboardContent = () => {
                                     transition-all group-hover:w-full"
                                 style={{ backgroundColor: item.color }}
                             ></div>
-                        </a>
+                        </div>
                     ))}
                 </div>
 
@@ -889,7 +865,7 @@ const DashboardContent = () => {
                                                     #{order._id.slice(-6)}
                                                 </td>
                                                 <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                    Table {order.tableNumber || 'N/A'}
+                                                    Table {order.tableNo || order.tableNumber || 'N/A'}
                                                 </td>
                                                 <td className="px-4 py-4 whitespace-nowrap text-sm">
                                                     <span className={`px-2 py-1 text-xs font-medium rounded-full
@@ -925,12 +901,14 @@ const DashboardContent = () => {
                                                         >
                                                             View
                                                         </button>
-                                                        <button 
-                                                            onClick={() => handleUpdateOrder(order)}
-                                                            className="text-green-600 hover:text-green-800 font-medium px-2 py-1 rounded hover:bg-green-50 transition-colors"
-                                                        >
-                                                            Update
-                                                        </button>
+                                                        {!['paid', 'completed', 'cancelled'].includes(order.status) && (
+                                                            <button 
+                                                                onClick={() => handleUpdateOrder(order)}
+                                                                className="text-green-600 hover:text-green-800 font-medium px-2 py-1 rounded hover:bg-green-50 transition-colors"
+                                                            >
+                                                                Update
+                                                            </button>
+                                                        )}
                                                     </div>
                                                 </td>
                                             </tr>
@@ -976,62 +954,76 @@ const DashboardContent = () => {
                                     <div className="flex justify-between items-center mb-4">
                                         <h4 className="font-semibold text-gray-700">Weekly Revenue</h4>
                                         <div className="flex items-center space-x-2">
-                                            <span className="px-2 py-1 bg-green-100 text-green-700 text-xs font-medium rounded">
-                                                +12.5% vs last week
+                                            <span className={`px-2 py-1 text-xs font-medium rounded ${
+                                                stats.revenueChange >= 0 
+                                                    ? 'bg-green-100 text-green-700' 
+                                                    : 'bg-red-100 text-red-700'
+                                            }`}>
+                                                {stats.revenueChange >= 0 ? '+' : ''}{stats.revenueChange.toFixed(1)}% vs last week
                                             </span>
                                         </div>
                                     </div>
                                     <div className="h-64 relative">
-                                        <svg className="w-full h-full" viewBox="0 0 300 100" preserveAspectRatio="none">
-                                            <defs>
-                                                <linearGradient id="salesGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                                                    <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.2" />
-                                                    <stop offset="100%" stopColor="#3b82f6" stopOpacity="0.05" />
-                                                </linearGradient>
-                                            </defs>
-                                            <g className="grid">
-                                                {[20, 40, 60, 80].map(y => (
-                                                    <line 
-                                                        key={y} 
-                                                        x1="0" 
-                                                        y1={y} 
-                                                        x2="300" 
-                                                        y2={y} 
-                                                        stroke="#e5e7eb" 
-                                                        strokeDasharray="4" 
+                                        {loading ? (
+                                            <div className="flex items-center justify-center h-full">
+                                                <div className="animate-pulse text-gray-400">Loading chart data...</div>
+                                            </div>
+                                        ) : (
+                                            <>
+                                                <svg className="w-full h-full" viewBox="0 0 300 100" preserveAspectRatio="none">
+                                                    <defs>
+                                                        <linearGradient id="salesGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                                                            <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.2" />
+                                                            <stop offset="100%" stopColor="#3b82f6" stopOpacity="0.05" />
+                                                        </linearGradient>
+                                                    </defs>
+                                                    <g className="grid">
+                                                        {[20, 40, 60, 80].map(y => (
+                                                            <line 
+                                                                key={y} 
+                                                                x1="0" 
+                                                                y1={y} 
+                                                                x2="300" 
+                                                                y2={y} 
+                                                                stroke="#e5e7eb" 
+                                                                strokeDasharray="4" 
+                                                            />
+                                                        ))}
+                                                    </g>
+                                                    <polyline
+                                                        fill="none"
+                                                        stroke="#3b82f6"
+                                                        strokeWidth="3"
+                                                        points="0,90 42,70 85,60 128,80 171,45 214,30 257,50 300,20"
+                                                        className="filter drop-shadow"
                                                     />
-                                                ))}
-                                            </g>
-                                            <polyline
-                                                fill="none"
-                                                stroke="#3b82f6"
-                                                strokeWidth="3"
-                                                points="0,90 42,70 85,60 128,80 171,45 214,30 257,50 300,20"
-                                                className="filter drop-shadow"
-                                            />
-                                            <polyline
-                                                fill="url(#salesGradient)"
-                                                points="0,100 0,90 42,70 85,60 128,80 171,45 214,30 257,50 300,20 300,100"
-                                            />
-                                            {/* Interactive Points */}
-                                            {[
-                                                {x: 0, y: 90}, {x: 42, y: 70}, {x: 85, y: 60},
-                                                {x: 128, y: 80}, {x: 171, y: 45}, {x: 214, y: 30},
-                                                {x: 257, y: 50}, {x: 300, y: 20}
-                                            ].map((point, i) => (
-                                                <g key={i}>
-                                                    <circle
-                                                        cx={point.x}
-                                                        cy={point.y}
-                                                        r="4"
-                                                        fill="#3b82f6"
-                                                        className="cursor-pointer transition-all duration-300"
-                                                        onMouseOver="evt.target.setAttribute('r', '6')"
-                                                        onMouseOut="evt.target.setAttribute('r', '4')"
+                                                    <polyline
+                                                        fill="url(#salesGradient)"
+                                                        points="0,100 0,90 42,70 85,60 128,80 171,45 214,30 257,50 300,20 300,100"
                                                     />
-                                                </g>
-                                            ))}
-                                        </svg>
+                                                    {[
+                                                        {x: 0, y: 90}, {x: 42, y: 70}, {x: 85, y: 60},
+                                                        {x: 128, y: 80}, {x: 171, y: 45}, {x: 214, y: 30},
+                                                        {x: 257, y: 50}, {x: 300, y: 20}
+                                                    ].map((point, i) => (
+                                                        <g key={i}>
+                                                            <circle
+                                                                cx={point.x}
+                                                                cy={point.y}
+                                                                r="4"
+                                                                fill="#3b82f6"
+                                                                className="cursor-pointer transition-all duration-300"
+                                                            />
+                                                        </g>
+                                                    ))}
+                                                </svg>
+                                                <div className="mt-2 text-center">
+                                                    <span className="text-sm text-gray-600">
+                                                        Total Revenue: <span className="font-bold text-gray-800">₹{orders.reduce((sum, order) => sum + (order.totalAmount || order.amount || order.total || 0), 0).toLocaleString()}</span>
+                                                    </span>
+                                                </div>
+                                            </>
+                                        )}
                                     </div>
                                 </div>
                             </div>
@@ -1049,8 +1041,8 @@ const DashboardContent = () => {
                 </div>
             </div>
             
-            {/* Wastage Analysis & Reservations Section */}
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            {/* Wastage Analysis Section */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Enhanced Wastage Trend Chart */}
                 <div className="lg:col-span-2 bg-white rounded-xl shadow-lg overflow-hidden">
                     <div className="p-6">
@@ -1140,160 +1132,6 @@ const DashboardContent = () => {
                 <div className="lg:col-span-1">
                     <WastageStatusWidget wastageData={wastageData} loading={loading} />
                 </div>
-
-                {/* Enhanced Reservations Panel */}
-                <div className="lg:col-span-1 bg-white rounded-xl shadow-lg overflow-hidden">
-                    <div className="p-6">
-                        <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center justify-between">
-                            <div className="flex items-center">
-                                <span className="bg-blue-50 p-2 rounded-lg mr-2">
-                                    <CalendarCheck className="h-5 w-5 text-blue-600" />
-                                </span>
-                                Table Reservations
-                            </div>
-                            <div className="flex items-center space-x-2">
-                                <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded-full">
-                                    {loading ? '...' : reservations.length} Today
-                                </span>
-                            </div>
-                        </h3>
-
-                        {/* Today's Statistics */}
-                        <div className="grid grid-cols-3 gap-2 mb-4">
-                            <div className="bg-gray-50 rounded-lg p-3 text-center">
-                                <span className="text-sm text-gray-600 block">Current</span>
-                                <span className="text-xl font-bold text-blue-600">
-                                    {loading ? '...' : reservations.filter(r => {
-                                        const now = new Date();
-                                        const reservationDate = new Date(r.reservationDate || r.date);
-                                        const reservationTime = new Date(reservationDate.toDateString() + ' ' + (r.reservationTimeIn || r.time));
-                                        const endTime = new Date(reservationDate.toDateString() + ' ' + (r.reservationTimeOut || r.time));
-                                        return now >= reservationTime && now <= endTime && reservationDate.toDateString() === now.toDateString();
-                                    }).length}
-                                </span>
-                            </div>
-                            <div className="bg-gray-50 rounded-lg p-3 text-center">
-                                <span className="text-sm text-gray-600 block">Upcoming</span>
-                                <span className="text-xl font-bold text-green-600">
-                                    {loading ? '...' : reservations.filter(r => {
-                                        const now = new Date();
-                                        const reservationDate = new Date(r.reservationDate || r.date);
-                                        const reservationTime = new Date(reservationDate.toDateString() + ' ' + (r.reservationTimeIn || r.time));
-                                        return reservationTime > now && reservationDate.toDateString() === now.toDateString();
-                                    }).length}
-                                </span>
-                            </div>
-                            <div className="bg-gray-50 rounded-lg p-3 text-center">
-                                <span className="text-sm text-gray-600 block">Table N/A</span>
-                                <span className="text-xl font-bold text-yellow-600">
-                                    {loading ? '...' : reservations.filter(r => !r.tableNo && r.status !== 'confirm').length}
-                                </span>
-                            </div>
-                        </div>
-
-                        {/* Guest Summary */}
-                        <div className="bg-gray-50 p-3 rounded-lg mb-4 flex justify-between items-center">
-                            <div className="flex items-center">
-                                <span className="text-sm text-gray-600">{loading ? '...' : reservations.reduce((sum, r) => sum + (r.partySize || 0), 0)} Guests</span>
-                                <span className="mx-2">|</span>
-                                <span className="text-sm text-gray-600">Guest</span>
-                            </div>
-                            <span className="text-xs text-gray-500 italic">"{loading ? '...' : 'Average party size: ' + (reservations.length ? (reservations.reduce((sum, r) => sum + (r.partySize || 0), 0) / reservations.length).toFixed(1) : 0)}"</span>
-                        </div>
-
-                        {/* Detailed Reservation List */}
-                        <div className="space-y-3 max-h-[300px] overflow-y-auto custom-scrollbar">
-                            {loading ? (
-                                <div className="animate-pulse space-y-3">
-                                    {[1, 2, 3].map(i => (
-                                        <div key={i} className="h-20 bg-gray-100 rounded-lg"></div>
-                                    ))}
-                                </div>
-                            ) : reservations.length > 0 ? (
-                                reservations
-                                    .sort((a, b) => {
-                                        const dateA = new Date(a.reservationDate || a.date);
-                                        const timeA = new Date(dateA.toDateString() + ' ' + (a.reservationTime || a.time));
-                                        const dateB = new Date(b.reservationDate || b.date);
-                                        const timeB = new Date(dateB.toDateString() + ' ' + (b.reservationTime || b.time));
-                                        return timeA - timeB;
-                                    })
-                                    .map((reservation) => {
-                                        const reservationDate = new Date(reservation.reservationDate || reservation.date);
-                                        const reservationTime = new Date(reservationDate.toDateString() + ' ' + (reservation.reservationTime || reservation.time));
-                                        const now = new Date();
-                                        const status = reservationTime > now ? 'upcoming' : 'current';
-                                        const isPast = reservationTime < now;
-                                        
-                                        return (
-                                            <div 
-                                                key={reservation._id} 
-                                                className={`p-4 rounded-xl border transition-all hover:shadow-md
-                                                    ${status === 'upcoming' 
-                                                        ? 'bg-green-50 border-green-100 hover:border-green-200' 
-                                                        : 'bg-blue-50 border-blue-100 hover:border-blue-200'}
-                                                    ${isPast ? 'opacity-60' : ''}
-                                                `}
-                                            >
-                                                <div className="flex justify-between items-start">
-                                                    <div className="flex flex-col">
-                                                        <span className="text-sm font-semibold text-gray-800">
-                                                            {reservation.guestName}
-                                                        </span>
-                                                        <span className="text-xs text-gray-500 mt-1">
-                                                            {reservation.partySize} Guests | {reservation.phoneNumber}
-                                                        </span>
-                                                        {reservation.specialRequests && (
-                                                            <span className="text-xs text-gray-500 mt-1 italic">
-                                                                "{reservation.specialRequests}"
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                    <div className="text-right">
-                                                        <span className={`text-sm font-bold
-                                                            ${status === 'upcoming' ? 'text-green-700' : 'text-blue-700'}
-                                                        `}>
-                                                            {reservation.reservationTimeIn} - {reservation.reservationTimeOut}
-                                                        </span>
-                                                        <span className={`text-xs block mt-1 px-2 py-0.5 rounded
-                                                            ${status === 'upcoming' 
-                                                                ? 'bg-green-100 text-green-700' 
-                                                                : 'bg-blue-100 text-blue-700'}
-                                                        `}>
-                                                            {status === 'upcoming' ? 'Upcoming' : 'Current'}
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        );
-                                    })
-                            ) : (
-                                <div className="p-4 text-gray-500 text-center bg-gray-50 rounded-xl border border-gray-100">
-                                    No reservations today
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Action Buttons */}
-                        <div className="mt-4 flex space-x-2">
-                            <a 
-                                href="/reservation"
-                                className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg font-semibold 
-                                    hover:bg-blue-700 transition-colors flex items-center justify-center"
-                            >
-                                <CalendarCheck className="h-4 w-4 mr-2" />
-                                New Booking
-                            </a>
-                            <a 
-                                href="/reservations"
-                                className="flex-1 bg-gray-100 text-gray-700 py-2 px-4 rounded-lg font-semibold 
-                                    hover:bg-gray-200 transition-colors flex items-center justify-center"
-                            >
-                                View All
-                            </a>
-                        </div>
-                    </div>
-                </div>
             </div>
 
             {/* View Order Modal */}
@@ -1318,7 +1156,7 @@ const DashboardContent = () => {
                                     </div>
                                     <div>
                                         <label className="text-sm font-medium text-gray-600">Table Number</label>
-                                        <p className="text-gray-800">Table {selectedOrder.tableNumber || 'N/A'}</p>
+                                        <p className="text-gray-800">Table {selectedOrder.tableNo || selectedOrder.tableNumber || 'N/A'}</p>
                                     </div>
                                     <div>
                                         <label className="text-sm font-medium text-gray-600">Order Type</label>

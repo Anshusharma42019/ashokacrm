@@ -24,7 +24,7 @@ const EditOrder = () => {
     try {
       const token = localStorage.getItem('token');
       const [orderRes, menuRes] = await Promise.all([
-        axios.get(`/api/restaurant-orders/all`, {
+        axios.get(`/api/inroom-orders/all`, {
           headers: { Authorization: `Bearer ${token}` }
         }),
         axios.get('/api/menu-items', {
@@ -35,7 +35,7 @@ const EditOrder = () => {
       const foundOrder = orderRes.data.find(o => o._id === orderId);
       if (!foundOrder) {
         showToast.error('Order not found');
-        navigate('/restaurant/all-orders');
+        navigate('/inroomdinein/all-orders');
         return;
       }
 
@@ -97,7 +97,10 @@ const EditOrder = () => {
       const token = localStorage.getItem('token');
       const newTotal = calculateTotal();
       
-      await axios.patch(`/api/restaurant-orders/${orderId}`, {
+      console.log('Updating order:', orderId);
+      console.log('Update data:', { items: editedItems, amount: newTotal, subtotal: newTotal });
+      
+      const response = await axios.patch(`/api/inroom-orders/${orderId}`, {
         items: editedItems,
         amount: newTotal,
         subtotal: newTotal
@@ -105,11 +108,13 @@ const EditOrder = () => {
         headers: { Authorization: `Bearer ${token}` }
       });
 
+      console.log('Update response:', response.data);
       showToast.success('Order updated successfully');
-      navigate('/restaurant/all-orders');
+      navigate('/inroomdinein/all-orders');
     } catch (error) {
       console.error('Error updating order:', error);
-      showToast.error('Failed to update order');
+      console.error('Error response:', error.response?.data);
+      showToast.error(error.response?.data?.error || 'Failed to update order');
     } finally {
       setSaving(false);
     }
@@ -135,7 +140,7 @@ const EditOrder = () => {
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center space-x-4">
               <button
-                onClick={() => navigate('/restaurant/all-orders')}
+                onClick={() => navigate('/inroomdinein/all-orders')}
                 className="flex items-center text-gray-600 hover:text-gray-900 transition-colors"
               >
                 <ArrowLeft className="w-5 h-5 mr-2" />
@@ -232,7 +237,7 @@ const EditOrder = () => {
             {/* Action Buttons */}
             <div className="mt-6 flex justify-end space-x-4">
               <button
-                onClick={() => navigate('/restaurant/all-orders')}
+                onClick={() => navigate('/inroomdinein/all-orders')}
                 className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors flex items-center"
               >
                 <X className="w-4 h-4 mr-2" />

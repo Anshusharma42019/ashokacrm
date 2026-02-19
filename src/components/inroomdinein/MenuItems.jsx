@@ -59,7 +59,7 @@ const MenuItems = () => {
   const fetchMenuItems = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('/api/menu-items', {
+      const response = await axios.get('/api/menu-items?includeInactive=true', {
         headers: { Authorization: `Bearer ${token}` }
       });
       console.log('Menu items response:', response.data);

@@ -512,12 +512,14 @@ const AllOrders = () => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <div className="flex space-x-2">
-                      <button
-                        onClick={() => navigate(`/restaurant/edit-order/${order._id}`)}
-                        className="bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600"
-                      >
-                        Edit
-                      </button>
+                      {!['paid', 'completed', 'cancelled'].includes(order.status) && (
+                        <button
+                          onClick={() => navigate(`/inroomdinein/edit-order/${order._id}`)}
+                          className="bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600"
+                        >
+                          Edit
+                        </button>
+                      )}
                       {hasRole('ADMIN') && (
                         <button
                           onClick={() => updateOrderStatus(order._id, 'cancelled')}
@@ -526,7 +528,7 @@ const AllOrders = () => {
                           Delete
                         </button>
                       )}
-                      {(order.status === 'pending' || order.status === 'served') && (
+                      {order.status === 'served' && (
                         <>
                           <button
                             onClick={() => updateOrderStatus(order._id, 'completed')}
@@ -541,6 +543,14 @@ const AllOrders = () => {
                             KOT
                           </button>
                         </>
+                      )}
+                      {(order.status === 'pending' || order.status === 'preparing' || order.status === 'ready') && (
+                        <button
+                          onClick={() => printKOT(order._id)}
+                          className="bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600"
+                        >
+                          KOT
+                        </button>
                       )}
                       {order.status === 'completed' && (
                         <button

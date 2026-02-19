@@ -67,6 +67,7 @@ const Users = () => {
       const response = await axios.get('/api/users/all');
       
       console.log('API Response:', response.data);
+      console.log('First user:', response.data.users?.[0]);
       
       const usersData = response.data.users || [];
       setUsers(usersData);
@@ -255,7 +256,9 @@ const Users = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredUsers.map((user, index) => (
+                  {filteredUsers.map((user, index) => {
+                    console.log('User row:', user.username, 'Role:', user.role, 'RestaurantRole:', user.restaurantRole, 'Department:', user.department);
+                    return (
                     <tr key={user._id} className={`${index % 2 === 0 ? 'bg-background' : 'bg-white'} animate-scaleIn`} style={{animationDelay: `${Math.min(index * 50 + 300, 800)}ms`}}>
                       <td className="px-4 py-3 text-sm text-text font-medium">{user.username}</td>
                       <td className="px-4 py-3 text-sm text-text">{user.name || 'N/A'}</td>
@@ -266,12 +269,12 @@ const Users = () => {
                         </span>
                       </td>
                       <td className="px-4 py-3 text-sm text-text">
-                        {user.restaurantRole || 'N/A'}
+                        {user.role === 'RESTAURANT' && user.restaurantRole ? user.restaurantRole : '-'}
                       </td>
                       <td className="px-4 py-3 text-sm text-text">
-                        {Array.isArray(user.department) 
-                          ? user.department.map(dept => typeof dept === 'object' ? dept.name : dept).join(', ')
-                          : (typeof user.department === 'object' ? user.department.name : user.department) || 'N/A'
+                        {user.role === 'STAFF' && Array.isArray(user.department) && user.department.length > 0
+                          ? user.department.map(dept => dept.name || dept).join(', ')
+                          : '-'
                         }
                       </td>
                       <td className="px-4 py-3">
@@ -313,7 +316,8 @@ const Users = () => {
                         </div>
                       </td>
                     </tr>
-                  ))}
+                  );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -453,185 +457,217 @@ const Users = () => {
       {/* Edit User Modal */}
       {showEdit && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
-            <div className="bg-gradient-to-r from-green-600 to-blue-600 text-white p-6 rounded-t-xl">
+          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b" style={{ backgroundColor: 'hsl(45, 100%, 95%)' }}>
               <div className="flex justify-between items-center">
-                <div>
-                  <h3 className="text-xl font-bold">✏️ Edit User</h3>
-                  <p className="text-green-100 text-sm">{editUser.username}</p>
-                </div>
+                <h3 className="text-xl font-bold" style={{ color: 'hsl(45, 100%, 20%)' }}>Edit User</h3>
                 <button
                   onClick={() => setShowEdit(false)}
-                  className="text-white hover:bg-white hover:bg-opacity-20 rounded-full p-2 transition-colors"
+                  className="text-gray-500 hover:text-gray-700 text-2xl"
                 >
                   ×
                 </button>
               </div>
             </div>
 
-            <form onSubmit={handleUpdate} className="p-6 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-600 mb-1">Username</label>
-                <input
-                  type="text"
-                  value={editUser.username || ''}
-                  onChange={(e) => setEditUser({...editUser, username: e.target.value})}
-                  className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  required
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-600 mb-1">Full Name</label>
-                <input
-                  type="text"
-                  value={editUser.name || ''}
-                  onChange={(e) => setEditUser({...editUser, name: e.target.value})}
-                  className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-600 mb-1">Email</label>
-                <input
-                  type="email"
-                  value={editUser.email || ''}
-                  onChange={(e) => setEditUser({...editUser, email: e.target.value})}
-                  className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-600 mb-1">Role</label>
-                <select
-                  value={editUser.role || ''}
-                  onChange={(e) => setEditUser({...editUser, role: e.target.value})}
-                  className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="admin">Admin</option>
-                  <option value="manager">Manager</option>
-                  <option value="staff">Staff</option>
-                  <option value="restaurant">Restaurant</option>
-                </select>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-600 mb-1">New Password</label>
-                <input
-                  type="password"
-                  value={editUser.password || ''}
-                  onChange={(e) => setEditUser({...editUser, password: e.target.value})}
-                  className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  placeholder="Leave blank to keep current password"
-                />
-                <p className="text-xs text-gray-500 mt-1">Leave empty if you don't want to change the password</p>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-600 mb-1">Status</label>
-                <div className="flex items-center space-x-3">
-                  <label className="flex items-center cursor-pointer">
-                    <input
-                      type="radio"
-                      name="isActive"
-                      checked={editUser.isActive !== false}
-                      onChange={() => setEditUser({...editUser, isActive: true})}
-                      className="mr-2"
-                    />
-                    <span className="text-green-600 font-medium">Active</span>
-                  </label>
-                  <label className="flex items-center cursor-pointer">
-                    <input
-                      type="radio"
-                      name="isActive"
-                      checked={editUser.isActive === false}
-                      onChange={() => setEditUser({...editUser, isActive: false})}
-                      className="mr-2"
-                    />
-                    <span className="text-red-600 font-medium">Inactive</span>
-                  </label>
+            <form onSubmit={handleUpdate} className="p-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1" style={{ color: 'hsl(45, 100%, 20%)' }}>Username *</label>
+                  <input
+                    type="text"
+                    value={editUser.username || ''}
+                    onChange={(e) => setEditUser({...editUser, username: e.target.value})}
+                    className="w-full rounded-lg px-3 py-2"
+                    style={{ border: '1px solid hsl(45, 100%, 85%)', backgroundColor: 'white', color: 'hsl(45, 100%, 20%)' }}
+                    required
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium mb-1" style={{ color: 'hsl(45, 100%, 20%)' }}>Full Name</label>
+                  <input
+                    type="text"
+                    value={editUser.name || ''}
+                    onChange={(e) => setEditUser({...editUser, name: e.target.value})}
+                    className="w-full rounded-lg px-3 py-2"
+                    style={{ border: '1px solid hsl(45, 100%, 85%)', backgroundColor: 'white', color: 'hsl(45, 100%, 20%)' }}
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium mb-1" style={{ color: 'hsl(45, 100%, 20%)' }}>Email</label>
+                  <input
+                    type="email"
+                    value={editUser.email || ''}
+                    onChange={(e) => setEditUser({...editUser, email: e.target.value})}
+                    className="w-full rounded-lg px-3 py-2"
+                    style={{ border: '1px solid hsl(45, 100%, 85%)', backgroundColor: 'white', color: 'hsl(45, 100%, 20%)' }}
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium mb-1" style={{ color: 'hsl(45, 100%, 20%)' }}>Role *</label>
+                  <select
+                    value={editUser.role || ''}
+                    onChange={(e) => setEditUser({...editUser, role: e.target.value})}
+                    className="w-full rounded-lg px-3 py-2"
+                    style={{ border: '1px solid hsl(45, 100%, 85%)', backgroundColor: 'white', color: 'hsl(45, 100%, 20%)' }}
+                  >
+                    <option value="ADMIN">Admin</option>
+                    <option value="GM">General Manager</option>
+                    <option value="FRONT DESK">Front Desk</option>
+                    <option value="ACCOUNTS">Accounts</option>
+                    <option value="STAFF">Staff</option>
+                    <option value="RESTAURANT">Restaurant</option>
+                  </select>
+                </div>
+                
+                {editUser.role === 'RESTAURANT' && (
+                  <div>
+                    <label className="block text-sm font-medium mb-1" style={{ color: 'hsl(45, 100%, 20%)' }}>Restaurant Role</label>
+                    <select
+                      value={editUser.restaurantRole || ''}
+                      onChange={(e) => setEditUser({...editUser, restaurantRole: e.target.value})}
+                      className="w-full rounded-lg px-3 py-2"
+                      style={{ border: '1px solid hsl(45, 100%, 85%)', backgroundColor: 'white', color: 'hsl(45, 100%, 20%)' }}
+                    >
+                      <option value="">Select restaurant role</option>
+                      <option value="staff">Staff</option>
+                      <option value="cashier">Cashier</option>
+                      <option value="chef">Chef</option>
+                    </select>
+                  </div>
+                )}
+                
+                <div>
+                  <label className="block text-sm font-medium mb-1" style={{ color: 'hsl(45, 100%, 20%)' }}>New Password</label>
+                  <input
+                    type="password"
+                    value={editUser.password || ''}
+                    onChange={(e) => setEditUser({...editUser, password: e.target.value})}
+                    className="w-full rounded-lg px-3 py-2"
+                    style={{ border: '1px solid hsl(45, 100%, 85%)', backgroundColor: 'white', color: 'hsl(45, 100%, 20%)' }}
+                    placeholder="Leave blank to keep current"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium mb-1" style={{ color: 'hsl(45, 100%, 20%)' }}>Status</label>
+                  <div className="flex items-center space-x-4 mt-2">
+                    <label className="flex items-center cursor-pointer">
+                      <input
+                        type="radio"
+                        name="isActive"
+                        checked={editUser.isActive !== false}
+                        onChange={() => setEditUser({...editUser, isActive: true})}
+                        className="mr-2"
+                      />
+                      <span className="text-green-600 font-medium">Active</span>
+                    </label>
+                    <label className="flex items-center cursor-pointer">
+                      <input
+                        type="radio"
+                        name="isActive"
+                        checked={editUser.isActive === false}
+                        onChange={() => setEditUser({...editUser, isActive: false})}
+                        className="mr-2"
+                      />
+                      <span className="text-red-600 font-medium">Inactive</span>
+                    </label>
+                  </div>
                 </div>
               </div>
               
-              <div className="border-t pt-4">
-                <h4 className="font-medium text-gray-700 mb-3">Bank Details</h4>
-                <div className="grid grid-cols-2 gap-3">
+              <div className="border-t pt-4 mt-4">
+                <h4 className="font-semibold mb-3" style={{ color: 'hsl(45, 100%, 20%)' }}>Bank Details</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <input
                     type="text"
                     placeholder="Account Number"
                     value={editUser.bankDetails?.accountNumber || ''}
                     onChange={(e) => setEditUser({...editUser, bankDetails: {...editUser.bankDetails, accountNumber: e.target.value}})}
-                    className="p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full rounded-lg px-3 py-2"
+                    style={{ border: '1px solid hsl(45, 100%, 85%)', backgroundColor: 'white', color: 'hsl(45, 100%, 20%)' }}
                   />
                   <input
                     type="text"
                     placeholder="IFSC Code"
                     value={editUser.bankDetails?.ifscCode || ''}
                     onChange={(e) => setEditUser({...editUser, bankDetails: {...editUser.bankDetails, ifscCode: e.target.value}})}
-                    className="p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full rounded-lg px-3 py-2"
+                    style={{ border: '1px solid hsl(45, 100%, 85%)', backgroundColor: 'white', color: 'hsl(45, 100%, 20%)' }}
                   />
                   <input
                     type="text"
                     placeholder="Bank Name"
                     value={editUser.bankDetails?.bankName || ''}
                     onChange={(e) => setEditUser({...editUser, bankDetails: {...editUser.bankDetails, bankName: e.target.value}})}
-                    className="p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full rounded-lg px-3 py-2"
+                    style={{ border: '1px solid hsl(45, 100%, 85%)', backgroundColor: 'white', color: 'hsl(45, 100%, 20%)' }}
                   />
                   <input
                     type="text"
                     placeholder="Account Holder Name"
                     value={editUser.bankDetails?.accountHolderName || ''}
                     onChange={(e) => setEditUser({...editUser, bankDetails: {...editUser.bankDetails, accountHolderName: e.target.value}})}
-                    className="p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full rounded-lg px-3 py-2"
+                    style={{ border: '1px solid hsl(45, 100%, 85%)', backgroundColor: 'white', color: 'hsl(45, 100%, 20%)' }}
                   />
                 </div>
               </div>
               
-              <div className="border-t pt-4">
-                <h4 className="font-medium text-gray-700 mb-3">Salary Details</h4>
-                <div className="grid grid-cols-2 gap-3">
+              <div className="border-t pt-4 mt-4">
+                <h4 className="font-semibold mb-3" style={{ color: 'hsl(45, 100%, 20%)' }}>Salary Details</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <input
                     type="number"
                     placeholder="Basic Salary"
                     value={editUser.salaryDetails?.basicSalary || ''}
                     onChange={(e) => setEditUser({...editUser, salaryDetails: {...editUser.salaryDetails, basicSalary: e.target.value}})}
-                    className="p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full rounded-lg px-3 py-2"
+                    style={{ border: '1px solid hsl(45, 100%, 85%)', backgroundColor: 'white', color: 'hsl(45, 100%, 20%)' }}
                   />
                   <input
                     type="number"
                     placeholder="Allowances"
                     value={editUser.salaryDetails?.allowances || ''}
                     onChange={(e) => setEditUser({...editUser, salaryDetails: {...editUser.salaryDetails, allowances: e.target.value}})}
-                    className="p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full rounded-lg px-3 py-2"
+                    style={{ border: '1px solid hsl(45, 100%, 85%)', backgroundColor: 'white', color: 'hsl(45, 100%, 20%)' }}
                   />
                   <input
                     type="number"
                     placeholder="Deductions"
                     value={editUser.salaryDetails?.deductions || ''}
                     onChange={(e) => setEditUser({...editUser, salaryDetails: {...editUser.salaryDetails, deductions: e.target.value}})}
-                    className="p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full rounded-lg px-3 py-2"
+                    style={{ border: '1px solid hsl(45, 100%, 85%)', backgroundColor: 'white', color: 'hsl(45, 100%, 20%)' }}
                   />
                   <input
                     type="number"
                     placeholder="Net Salary"
                     value={editUser.salaryDetails?.netSalary || ''}
                     onChange={(e) => setEditUser({...editUser, salaryDetails: {...editUser.salaryDetails, netSalary: e.target.value}})}
-                    className="p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full rounded-lg px-3 py-2"
+                    style={{ border: '1px solid hsl(45, 100%, 85%)', backgroundColor: 'white', color: 'hsl(45, 100%, 20%)' }}
                   />
                 </div>
               </div>
 
-              <div className="flex justify-end space-x-3 pt-4">
+              <div className="flex justify-end space-x-2 pt-4 mt-4 border-t">
                 <button
                   type="button"
                   onClick={() => setShowEdit(false)}
-                  className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                  className="px-4 py-2 rounded-lg"
+                  style={{ backgroundColor: 'hsl(45, 32%, 46%)', color: 'white' }}
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+                  className="px-4 py-2 rounded-lg"
+                  style={{ backgroundColor: 'hsl(45, 71%, 69%)', color: 'hsl(45, 100%, 20%)' }}
                 >
                   Update User
                 </button>
@@ -644,19 +680,19 @@ const Users = () => {
       {/* Register User Modal */}
       {showRegister && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
-            <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-4 rounded-t-xl">
+          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b" style={{ backgroundColor: 'hsl(45, 100%, 95%)' }}>
               <div className="flex justify-between items-center">
-                <h3 className="text-xl font-bold">Add New User</h3>
+                <h3 className="text-xl font-bold" style={{ color: 'hsl(45, 100%, 20%)' }}>Add New User</h3>
                 <button
                   onClick={() => setShowRegister(false)}
-                  className="text-white hover:bg-white hover:bg-opacity-20 rounded-full p-2 transition-colors"
+                  className="text-gray-500 hover:text-gray-700 text-2xl"
                 >
                   ×
                 </button>
               </div>
             </div>
-            <div className="p-4">
+            <div className="p-6">
               <RegisterForm onSuccess={() => { setShowRegister(false); fetchUsers(currentPage); }} />
             </div>
           </div>

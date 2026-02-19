@@ -757,16 +757,6 @@ const KOT = () => {
               >
                 KOT History
               </button>
-              <button
-                onClick={() => setActiveTab('create')}
-                className={`px-6 py-4 text-sm font-medium transition-colors ${
-                  activeTab === 'create'
-                    ? 'bg-primary text-text border-b-2 border-primary'
-                    : 'text-gray-500 hover:text-text hover:bg-accent'
-                }`}
-              >
-                Create KOT
-              </button>
             </nav>
           </div>
           
@@ -936,112 +926,7 @@ const KOT = () => {
               </div>
             )}
             
-            {activeTab === 'create' && (
-              <div className="p-6">
-                <div className="max-w-2xl mx-auto">
-                  <h2 className="text-xl font-bold mb-4" style={{ color: 'hsl(45, 100%, 20%)' }}>Create New KOT</h2>
-                  <form onSubmit={createKOT} className="space-y-4">
-              <div>
-                <label className="block text-sm font-semibold mb-2 text-text">Select Order</label>
-                <select
-                  value={kotForm.orderId}
-                  onChange={(e) => {
-                    const selectedOrder = orders.find(o => o._id === e.target.value);
-                    setKotForm({
-                      ...kotForm,
-                      orderId: e.target.value,
-                      tableNo: selectedOrder?.tableNo || '',
-                      items: selectedOrder?.items || []
-                    });
-                  }}
-                  className="w-full p-3 border-2 border-border rounded-lg bg-white text-text focus:border-primary focus:outline-none transition-colors"
-                  style={{ borderColor: 'hsl(45, 100%, 85%)', backgroundColor: 'white', color: 'hsl(45, 100%, 20%)' }}
-                  required
-                >
-                  <option value="">Select Order</option>
-                  {orders.map(order => (
-                    <option key={order._id} value={order._id}>
-                      Order {order._id.slice(-6)} - Table {order.tableNo}
-                    </option>
-                  ))}
-                </select>
-              </div>
 
-              <div>
-                <label className="block text-sm font-semibold mb-2 text-text">Table Number</label>
-                <select
-                  value={kotForm.tableNo}
-                  onChange={(e) => setKotForm({...kotForm, tableNo: e.target.value})}
-                  className="w-full p-3 border-2 border-border rounded-lg bg-white text-text focus:border-primary focus:outline-none transition-colors"
-                  style={{ borderColor: 'hsl(45, 100%, 85%)', backgroundColor: 'white', color: 'hsl(45, 100%, 20%)' }}
-                  required
-                >
-                  <option value="">Select Table</option>
-                  {Array.isArray(tables) && tables.map(table => (
-                    <option key={table._id} value={table.tableNumber}>
-                      Table {table.tableNumber}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold mb-2 text-text">Priority Level</label>
-                <select
-                  value={kotForm.priority}
-                  onChange={(e) => setKotForm({...kotForm, priority: e.target.value})}
-                  className="w-full p-3 border-2 border-border rounded-lg bg-white text-text focus:border-primary focus:outline-none transition-colors"
-                  style={{ borderColor: 'hsl(45, 100%, 85%)', backgroundColor: 'white', color: 'hsl(45, 100%, 20%)' }}
-                >
-                  <option value="low">Low Priority</option>
-                  <option value="normal">Normal Priority</option>
-                  <option value="high">High Priority</option>
-                  <option value="urgent">Urgent</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold mb-2 text-text">Estimated Time (minutes)</label>
-                <input
-                  type="number"
-                  placeholder="Enter estimated time"
-                  value={kotForm.estimatedTime}
-                  onChange={(e) => setKotForm({...kotForm, estimatedTime: e.target.value})}
-                  className="w-full p-3 border-2 border-border rounded-lg bg-white text-text focus:border-primary focus:outline-none transition-colors"
-                  style={{ borderColor: 'hsl(45, 100%, 85%)', backgroundColor: 'white', color: 'hsl(45, 100%, 20%)' }}
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold mb-2 text-text">Assign Chef</label>
-                <select
-                  value={kotForm.assignedChef}
-                  onChange={(e) => setKotForm({...kotForm, assignedChef: e.target.value})}
-                  className="w-full p-3 border-2 border-border rounded-lg bg-white text-text focus:border-primary focus:outline-none transition-colors"
-                  style={{ borderColor: 'hsl(45, 100%, 85%)', backgroundColor: 'white', color: 'hsl(45, 100%, 20%)' }}
-                >
-                  <option value="">Select Chef</option>
-                  {chefs.map(chef => (
-                    <option key={chef._id} value={chef._id}>
-                      {chef.name || chef.username}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <button
-                type="submit"
-                className="w-full p-3 rounded-lg font-semibold transition-colors shadow-md"
-                style={{ backgroundColor: 'hsl(45, 43%, 58%)', color: 'hsl(45, 100%, 20%)' }}
-                onMouseOver={(e) => e.target.style.backgroundColor = 'hsl(45, 32%, 46%)'}
-                onMouseOut={(e) => e.target.style.backgroundColor = 'hsl(45, 43%, 58%)'}
-              >
-                Create KOT
-              </button>
-                  </form>
-                </div>
-              </div>
-            )}
 
           </div>
         </div>
