@@ -2416,25 +2416,9 @@ const EditBookingForm = () => {
                         type="button"
                         onClick={() => {
                           setIsNavigating(true);
-                          navigate('/room-service/create', {
-                            state: { 
-                              preSelectedBooking: editBooking
-                            }
-                          });
-                        }}
-                        className="px-6 py-3 rounded-lg font-medium text-white transition-colors"
-                        style={{backgroundColor: 'hsl(45, 43%, 58%)'}}
-                      >
-                        + Create New Room Service Order
-                      </Button>
-                      <Button
-                        type="button"
-                        onClick={() => {
-                          setIsNavigating(true);
-                          navigate('/restaurant/create-order', {
+                          navigate('/inroomdinein/create-order', {
                             state: { 
                               preSelectedBooking: editBooking,
-                              isDineIn: true,
                               returnToEdit: `/edit-booking/${editBooking._id}`,
                               returnState: { editBooking }
                             }
@@ -2443,7 +2427,7 @@ const EditBookingForm = () => {
                         className="px-6 py-3 rounded-lg font-medium text-white transition-colors"
                         style={{backgroundColor: 'hsl(45, 43%, 58%)'}}
                       >
-                        + Create New Restaurant Order
+                        + Create New In Room Dine In
                       </Button>
                       <Button
                         type="button"
