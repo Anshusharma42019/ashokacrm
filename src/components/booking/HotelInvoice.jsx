@@ -1614,7 +1614,7 @@ export default function Invoice() {
                     onClick={handleSetActiveInvoice.bind(null, 'restaurant')}
                     className={`px-3 py-2 rounded text-sm ${activeInvoice === 'restaurant' ? 'bg-orange-600 text-white' : 'bg-gray-200 text-gray-700'}`}
                   >
-                    Restaurant
+                    In Room Dine In
                   </button>
                   <button
                     onClick={handleSetActiveInvoice.bind(null, 'laundry')}
@@ -1655,7 +1655,7 @@ export default function Invoice() {
               <div className="text-center font-bold text-lg flex-1">
                 {activeInvoice === 'hotel' && 'TAX INVOICE'}
                 {activeInvoice === 'roomservice' && 'ROOM SERVICE INVOICE'}
-                {activeInvoice === 'restaurant' && 'RESTAURANT INVOICE'}
+                {activeInvoice === 'restaurant' && 'IN ROOM DINE IN INVOICE'}
                 {activeInvoice === 'laundry' && 'LAUNDRY INVOICE'}
               </div>
             </div>
