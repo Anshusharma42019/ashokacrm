@@ -3,6 +3,8 @@ import { useAppContext } from "../../context/AppContext";
 import { useAuth } from "../../context/AuthContext";
 import Pagination from "../common/Pagination";
 import Category from "./Category";
+import Variations from "./Variations";
+import Addons from "./Addons";
 import DashboardLoader from '../DashboardLoader';
 
 // Add CSS animations
@@ -38,6 +40,8 @@ const MenuItems = () => {
   const { hasRole } = useAuth();
   const [menuItems, setMenuItems] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [allVariations, setAllVariations] = useState([]);
+  const [allAddons, setAllAddons] = useState([]);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
@@ -51,7 +55,9 @@ const MenuItems = () => {
     isActive: true,
     image: '',
     description: '',
-    timeToPrepare: 0
+    timeToPrepare: 0,
+    variations: [],
+    addons: []
   });
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(9);
@@ -80,10 +86,34 @@ const MenuItems = () => {
     }
   };
 
+  const fetchVariations = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get('/api/variations/all/variation', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setAllVariations(response.data || []);
+    } catch (error) {
+      console.error('Error fetching variations:', error);
+    }
+  };
+
+  const fetchAddons = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get('/api/addons/all/addon', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setAllAddons(response.data || []);
+    } catch (error) {
+      console.error('Error fetching addons:', error);
+    }
+  };
+
   useEffect(() => {
     const loadInitialData = async () => {
       setIsInitialLoading(true);
-      await Promise.all([fetchMenuItems(), fetchCategories()]);
+      await Promise.all([fetchMenuItems(), fetchCategories(), fetchVariations(), fetchAddons()]);
       setIsInitialLoading(false);
     };
     loadInitialData();
@@ -103,15 +133,26 @@ const MenuItems = () => {
       fetchMenuItems();
       setShowForm(false);
       setEditingItem(null);
-      setFormData({ name: '', Price: 0, category: '', Discount: 0, foodType: 'Veg', isActive: true, image: '', description: '', timeToPrepare: 0 });
+      setFormData({ name: '', Price: 0, category: '', Discount: 0, foodType: 'Veg', isActive: true, image: '', description: '', timeToPrepare: 0, variations: [], addons: [] });
     } catch (error) {
       console.error('Error saving menu item:', error);
     }
   };
 
   const handleEdit = (item) => {
+    console.log('Editing item:', item);
+    console.log('Item variations:', item.variations);
+    console.log('Item addons:', item.addons);
     setEditingItem(item);
-    setFormData(item);
+    const variationsArray = Array.isArray(item.variations) ? item.variations.map(v => typeof v === 'object' ? v._id?.toString() || v.toString() : v.toString()) : [];
+    const addonsArray = Array.isArray(item.addons) ? item.addons.map(a => typeof a === 'object' ? a._id?.toString() || a.toString() : a.toString()) : [];
+    console.log('Processed variations:', variationsArray);
+    console.log('Processed addons:', addonsArray);
+    setFormData({
+      ...item,
+      variations: variationsArray,
+      addons: addonsArray
+    });
     setShowForm(true);
   };
 
@@ -129,6 +170,14 @@ const MenuItems = () => {
 
   if (activeTab === 'categories') {
     return <Category onBackToItems={() => setActiveTab('items')} />;
+  }
+
+  if (activeTab === 'variations') {
+    return <Variations onBack={() => setActiveTab('items')} />;
+  }
+
+  if (activeTab === 'addons') {
+    return <Addons onBack={() => setActiveTab('items')} />;
   }
 
   if (isInitialLoading) {
@@ -159,6 +208,26 @@ const MenuItems = () => {
             }`}
           >
             Categories
+          </button>
+          <button
+            onClick={() => setActiveTab('variations')}
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              activeTab === 'variations'
+                ? 'bg-white text-blue-600 shadow-sm'
+                : 'text-gray-600 hover:text-gray-800'
+            }`}
+          >
+            Variations
+          </button>
+          <button
+            onClick={() => setActiveTab('addons')}
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              activeTab === 'addons'
+                ? 'bg-white text-blue-600 shadow-sm'
+                : 'text-gray-600 hover:text-gray-800'
+            }`}
+          >
+            Addons
           </button>
         </div>
       </div>
@@ -272,6 +341,60 @@ const MenuItems = () => {
               </select>
             </div>
 
+            <div className="col-span-2">
+              <label className="block text-sm font-medium mb-1" style={{ color: 'hsl(45, 100%, 20%)' }}>Variations</label>
+              <div className="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto border border-gray-300 rounded-lg p-2">
+                {allVariations.map(variation => {
+                  const variationId = variation._id.toString();
+                  const isChecked = (formData.variations || []).some(v => v.toString() === variationId);
+                  return (
+                  <label key={variation._id} className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={isChecked}
+                      onChange={(e) => {
+                        const currentVariations = (formData.variations || []).map(v => v.toString());
+                        if (e.target.checked) {
+                          setFormData({...formData, variations: [...currentVariations, variationId]});
+                        } else {
+                          setFormData({...formData, variations: currentVariations.filter(id => id !== variationId)});
+                        }
+                      }}
+                      className="rounded"
+                    />
+                    <span className="text-sm">{variation.name} - ₹{variation.price}</span>
+                  </label>
+                );})}
+              </div>
+            </div>
+
+            <div className="col-span-2">
+              <label className="block text-sm font-medium mb-1" style={{ color: 'hsl(45, 100%, 20%)' }}>Addons</label>
+              <div className="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto border border-gray-300 rounded-lg p-2">
+                {allAddons.map(addon => {
+                  const addonId = addon._id.toString();
+                  const isChecked = (formData.addons || []).some(a => a.toString() === addonId);
+                  return (
+                  <label key={addon._id} className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={isChecked}
+                      onChange={(e) => {
+                        const currentAddons = (formData.addons || []).map(a => a.toString());
+                        if (e.target.checked) {
+                          setFormData({...formData, addons: [...currentAddons, addonId]});
+                        } else {
+                          setFormData({...formData, addons: currentAddons.filter(id => id !== addonId)});
+                        }
+                      }}
+                      className="rounded"
+                    />
+                    <span className="text-sm">{addon.name} - ₹{addon.price}</span>
+                  </label>
+                );})}
+              </div>
+            </div>
+
             <div className="col-span-2 flex space-x-2">
               <button 
                 type="submit" 
@@ -285,7 +408,7 @@ const MenuItems = () => {
                 onClick={() => {
                   setShowForm(false);
                   setEditingItem(null);
-                  setFormData({ name: '', Price: 0, category: '', Discount: 0, foodType: 'Veg', isActive: true, image: '', description: '', timeToPrepare: 0 });
+                  setFormData({ name: '', Price: 0, category: '', Discount: 0, foodType: 'Veg', isActive: true, image: '', description: '', timeToPrepare: 0, variations: [], addons: [] });
                 }}
                 className="px-4 py-2 rounded-lg"
                 style={{ backgroundColor: 'hsl(45, 32%, 46%)', color: 'white' }}
