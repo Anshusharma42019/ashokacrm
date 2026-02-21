@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useAppContext } from "../../context/AppContext";
 import Table from "./Table";
 import Menu from "./Menu";
-import Order from "./Order";
+import Order from "./Orders/Order";
 import DashboardLoader from '../DashboardLoader';
 
 const Restaurant = () => {

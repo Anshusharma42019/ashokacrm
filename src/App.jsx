@@ -51,12 +51,11 @@ import RestaurantInvoice from './components/inroomdinein/RestaurantInvoice';
 
 // Restaurant Components
 import RestaurantDashboard from './components/restaurant/RestaurantDashboard';
-import RestaurantOrder from './components/restaurant/Order';
-import RestaurantAllOrders from './components/restaurant/Allorders';
+import RestaurantOrder from './components/restaurant/Orders/Order';
+import RestaurantAllOrders from './components/restaurant/Orders/Order';
 import RestaurantReservations from './components/restaurant/Resturantreservation';
 import RestaurantTables from './components/restaurant/Table';
 import RestaurantKOT from './components/restaurant/KOT';
-import RestaurantChefDashboard from './components/restaurant/ChefDashboard';
 import RestaurantTaxInvoice from './components/restaurant/RestaurantTaxInvoice';
 import SharedHotelInvoice from './components/booking/SharedHotelInvoice';
 import { RoomServiceInvoice, LaundryInvoice } from './components/invoices';
@@ -368,7 +367,7 @@ function App() {
             } />
             <Route path="restaurant/chef-dashboard" element={
               <PrivateRoute requiredRoles={['ADMIN', 'GM', 'FRONT DESK', 'STAFF']}>
-                <RestaurantChefDashboard />
+                <RestaurantKOT />
               </PrivateRoute>
             } />
             

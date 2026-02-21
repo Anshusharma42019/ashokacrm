@@ -20,6 +20,12 @@ const TransferTableModal = ({ isOpen, onClose, selectedOrder, onTransferComplete
         headers: { Authorization: `Bearer ${token}` }
       });
       const tablesData = Array.isArray(response.data) ? response.data : (response.data.tables || []);
+      console.log('Transfer modal - tables:', tablesData);
+      console.log('Current order table:', selectedOrder?.tableNo);
+      console.log('Filtered tables:', tablesData.filter(table => 
+        table.tableNumber !== selectedOrder?.tableNo && 
+        (table.status?.toLowerCase() === 'available' || !table.status)
+      ));
       setTables(tablesData);
     } catch (error) {
       console.error('Error fetching tables:', error);
@@ -87,7 +93,7 @@ const TransferTableModal = ({ isOpen, onClose, selectedOrder, onTransferComplete
                 <option value="">Choose a table...</option>
                 {tables.filter(table => 
                   table.tableNumber !== selectedOrder.tableNo && 
-                  (table.status === 'available' || !table.status)
+                  (table.status?.toLowerCase() === 'available' || !table.status)
                 ).map(table => (
                   <option key={table._id} value={table.tableNumber}>
                     Table {table.tableNumber} ({table.status || 'available'})

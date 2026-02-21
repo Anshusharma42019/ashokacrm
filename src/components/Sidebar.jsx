@@ -209,7 +209,6 @@ const Sidebar = () => {
         children: [
           { label: "Dashboard", path: "/restaurant/dashboard", icon: LayoutDashboard },
           { label: "Create Order", path: "/restaurant/create-order", icon: ShoppingCart },
-          { label: "All Orders", path: "/restaurant/orders", icon: ClipboardList },
           { label: "Tables", path: "/restaurant/tables", icon: BedDouble },
           { label: "KOT", path: "/restaurant/kitchen-kot", icon: ListChecks },
           { label: "Chef Dashboard", path: "/restaurant/chef-dashboard", icon: ChefHat },
