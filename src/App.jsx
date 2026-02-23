@@ -40,7 +40,7 @@ import RoomServiceDetails from './components/room/RoomServiceDetails';
 
 // In-Room Dine In Components
 import MenuItems from './components/inroomdinein/MenuItems';
-import Order from './components/inroomdinein/Order';
+import CreateOrder from './components/inroomdinein/CreateOrder';
 import LiveOrders from './components/inroomdinein/LiveOrders';
 import AllOrders from './components/inroomdinein/AllOrders';
 import EditOrder from './components/inroomdinein/EditOrder';
@@ -379,7 +379,7 @@ function App() {
             } />
             <Route path="inroomdinein/create-order" element={
               <PrivateRoute requiredRoles={['ADMIN', 'GM', 'FRONT DESK', 'STAFF']}>
-                <Order />
+                <CreateOrder />
               </PrivateRoute>
             } />
             <Route path="inroomdinein/live-orders" element={

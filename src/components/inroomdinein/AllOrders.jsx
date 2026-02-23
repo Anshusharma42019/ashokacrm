@@ -1,593 +1,307 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAppContext } from '../../context/AppContext';
-import { useAuth } from '../../context/AuthContext';
-import Pagination from '../common/Pagination';
-import DashboardLoader from '../DashboardLoader';
-
-// Add CSS animations
-const styles = `
-  @keyframes fadeInUp {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-  @keyframes slideInLeft {
-    from { opacity: 0; transform: translateX(-20px); }
-    to { opacity: 1; transform: translateX(0); }
-  }
-  @keyframes scaleIn {
-    from { opacity: 0; transform: scale(0.95); }
-    to { opacity: 1; transform: scale(1); }
-  }
-  .animate-fadeInUp { opacity: 0; animation: fadeInUp 0.5s ease-out forwards; }
-  .animate-slideInLeft { opacity: 0; animation: slideInLeft 0.4s ease-out forwards; }
-  .animate-scaleIn { opacity: 0; animation: scaleIn 0.3s ease-out forwards; }
-  .animate-delay-100 { animation-delay: 0.1s; }
-  .animate-delay-200 { animation-delay: 0.2s; }
-  .animate-delay-300 { animation-delay: 0.3s; }
-`;
-
-if (typeof document !== 'undefined') {
-  const styleSheet = document.createElement('style');
-  styleSheet.textContent = styles;
-  document.head.appendChild(styleSheet);
-}
+import { FiRefreshCw, FiUser, FiShoppingBag, FiFileText, FiChevronDown, FiCheckCircle, FiClock, FiChevronLeft } from 'react-icons/fi';
+import axios from 'axios';
 
 const AllOrders = () => {
-  const { axios } = useAppContext();
-  const { hasRole } = useAuth();
   const navigate = useNavigate();
   const [orders, setOrders] = useState([]);
-  const [filteredOrders, setFilteredOrders] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [isInitialLoading, setIsInitialLoading] = useState(true);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(10);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
-  const [dateFilter, setDateFilter] = useState('');
-  const [bookingFilter, setBookingFilter] = useState('');
-  const [allBookings, setAllBookings] = useState([]);
+  const [selectedOrder, setSelectedOrder] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [filterStatus, setFilterStatus] = useState('ALL');
+  const [expandedOrderItems, setExpandedOrderItems] = useState(null);
+
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
   useEffect(() => {
-    const loadInitialData = async () => {
-      setIsInitialLoading(true);
-      try {
-        // Start both API calls concurrently
-        const [ordersPromise, bookingsPromise] = [
-          fetchOrders(),
-          fetchBookings()
-        ];
-        
-        // Wait for orders first (main data), then bookings
-        await ordersPromise;
-        setIsInitialLoading(false); // Show content as soon as orders are loaded
-        
-        // Continue loading bookings in background
-        await bookingsPromise;
-      } catch (error) {
-        console.error('Error loading initial data:', error);
-        setIsInitialLoading(false);
-      }
-    };
-    loadInitialData();
-
-    // Listen for order status changes from chef dashboard
-    const handleStatusChange = () => {
-      fetchOrders();
-    };
-    window.addEventListener('orderStatusChanged', handleStatusChange);
-    
-    return () => {
-      window.removeEventListener('orderStatusChanged', handleStatusChange);
-    };
+    fetchOrders();
   }, []);
 
   useEffect(() => {
-    filterOrders();
-  }, [orders, searchQuery, statusFilter, dateFilter, bookingFilter]);
-
-  const fetchBookings = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get('/api/bookings/all', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const bookingData = Array.isArray(response.data) ? response.data : (response.data.bookings || []);
-      setAllBookings(bookingData);
-    } catch (error) {
-      console.error('Error fetching bookings:', error);
-      setAllBookings([]);
+    if (orders.length > 0 && !selectedOrder) {
+      setSelectedOrder(orders[0]);
     }
-  };
+  }, [orders, selectedOrder]);
 
   const fetchOrders = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('/api/inroom-orders/all', {
+      const response = await axios.get(`${API_URL}/api/inroom-orders/all`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      
-      const ordersData = response.data || [];
-      setOrders(ordersData);
-      setFilteredOrders(ordersData);
+      setOrders(response.data || []);
     } catch (error) {
       console.error('Error fetching orders:', error);
-      setOrders([]);
-      setFilteredOrders([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const filterOrders = () => {
-    let filtered = [...orders];
-
-    // Search filter
-    if (searchQuery.trim()) {
-      filtered = filtered.filter(order =>
-        order._id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        order.bookingId?.invoiceNumber?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        order.customerName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        order.tableNo?.toString().includes(searchQuery.toLowerCase())
-      );
-    }
-
-    // Status filter
-    if (statusFilter) {
-      filtered = filtered.filter(order => order.status === statusFilter);
-    }
-
-    // Date filter
-    if (dateFilter) {
-      const filterDate = new Date(dateFilter);
-      filtered = filtered.filter(order => {
-        const orderDate = new Date(order.createdAt);
-        return orderDate.toDateString() === filterDate.toDateString();
-      });
-    }
-
-    // Booking filter
-    if (bookingFilter && bookingFilter !== 'all') {
-      filtered = filtered.filter(order => order.bookingId?._id === bookingFilter);
-    }
-
-    setFilteredOrders(filtered);
-    setCurrentPage(1);
+  const statusColors = {
+    pending: 'bg-yellow-500 text-white',
+    preparing: 'bg-orange-500 text-white',
+    ready: 'bg-green-500 text-white',
+    served: 'bg-[#c2ab65] text-[#1f2937]',
+    completed: 'bg-[#1f2937] text-[#c2ab65]',
+    cancelled: 'bg-red-500 text-white'
   };
 
-  const printKOT = async (orderId) => {
-    try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get(`/api/inroom-orders/details/${orderId}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const order = response.data;
+  const filteredOrders = filterStatus === 'ALL' 
+    ? orders 
+    : orders.filter(order => order.status === filterStatus);
 
-      const printWindow = window.open('', '_blank');
-      const printContent = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <title>KOT #${order._id?.slice(-6) || 'N/A'}</title>
-          <style>
-            @page { size: 80mm auto; margin: 0; }
-            body { margin: 0; padding: 2mm; font-family: monospace; font-size: 10px; width: 80mm; }
-            .text-center { text-align: center; }
-            .mb-1 { margin-bottom: 4px; }
-            .mb-2 { margin-bottom: 8px; }
-            .border-b { border-bottom: 1px solid #000; }
-            .flex { display: flex; justify-content: space-between; }
-            .font-bold { font-weight: bold; }
-          </style>
-        </head>
-        <body>
-          <div class="text-center mb-2">
-            <div class="font-bold" style="font-size: 12px;">ASHOKA</div>
-            <div class="mb-1">EXPERIENCE COMFORT</div>
-            <div class="mb-2">KITCHEN ORDER TICKET</div>
-            <div class="font-bold mb-1">ASHOKA DINING</div>
-            <div class="mb-1">(A Unit Of Ashoka hospitality)</div>
-            <div class="mb-1">Add : Near Hanuman Mandir, Deoria Road</div>
-            <div class="mb-1">Kurnaghat, Gorakhpur - 273008</div>
-            <div class="mb-1">GSTIN : 09ANHPJ7242D2Z1</div>
-            <div class="mb-2">Mob : 6388491244</div>
-            <div class="border-b mb-2"></div>
-          </div>
+  const formatCurrency = (amount) => `₹${(amount || 0).toFixed(2)}`;
 
-          <div class="mb-2">
-            <div class="flex mb-1">
-              <span>KOT #: ${order._id?.slice(-6) || 'N/A'}</span>
-              <span>Room: ${order.tableNo || 'N/A'}</span>
-            </div>
-            <div class="flex mb-1">
-              <span>Date: ${new Date().toLocaleDateString('en-GB')}</span>
-              <span>Time: ${new Date().toLocaleTimeString('en-GB', { hour12: false })}</span>
-            </div>
-            <div class="flex mb-2">
-              <span>Status: ${order.status?.toUpperCase() || 'PENDING'}</span>
-              <span>Type: IN-ROOM</span>
-            </div>
-            <div class="border-b mb-2"></div>
-          </div>
+  const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleString('en-IN', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
 
-          <div class="mb-2">
-            <div class="flex font-bold border-b mb-1">
-              <span style="width: 40%">Item</span>
-              <span style="width: 15%; text-align: center">Qty</span>
-              <span style="width: 20%; text-align: right">Price</span>
-              <span style="width: 25%">Notes</span>
-            </div>
-          </div>
-
-          <div class="mb-2">
-            ${order.items?.map(item => `
-              <div class="flex mb-1">
-                <span style="width: 40%">${item.itemName || 'Unknown'}</span>
-                <span style="width: 15%; text-align: center">${item.quantity || 1}</span>
-                <span style="width: 20%; text-align: right">${item.isFree || item.nonChargeable ? 'FREE' : '₹' + (item.price || 0)}</span>
-                <span style="width: 25%">${item.note || '-'}</span>
-              </div>
-            `).join('') || '<div>No items</div>'}
-            <div class="border-b mb-2"></div>
-          </div>
-
-          <div class="mb-2">
-            <div class="mb-1">Guest: ${order.customerName || order.guestName || 'N/A'}</div>
-            <div class="mb-1">GRC No: ${order.grcNo || 'N/A'}</div>
-            <div class="mb-1">Total Items: ${order.items?.length || 0}</div>
-            <div class="border-b mb-2"></div>
-          </div>
-
-          <div class="text-center mb-2">
-            <div class="mb-2">Kitchen Copy - In-Room Dining</div>
-            <div class="border-b mb-2"></div>
-            <div>Printed: ${new Date().toLocaleString('en-GB')}</div>
-          </div>
-
-          <script>
-            window.onload = function() {
-              window.print();
-              window.onafterprint = function() { window.close(); };
-            };
-          </script>
-        </body>
-        </html>
-      `;
-      
-      printWindow.document.write(printContent);
-      printWindow.document.close();
-    } catch (error) {
-      console.error('Error printing KOT:', error);
-      alert('Failed to print KOT');
-    }
+  const printKOT = (orderId) => {
+    window.open(`/inroom-dining/kot/${orderId}`, '_blank');
   };
 
   const updateOrderStatus = async (orderId, newStatus) => {
     try {
       const token = localStorage.getItem('token');
-      
-      // Update in-room order status
-      await axios.patch(`/api/inroom-orders/${orderId}/status`, {
+      await axios.patch(`${API_URL}/api/inroom-orders/${orderId}/status`, {
         status: newStatus
       }, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
-      // Also update corresponding KOT status
-      try {
-        const kotResponse = await axios.get('/api/kot/all', {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        const relatedKot = kotResponse.data.find(kot => kot.orderId === orderId);
-        if (relatedKot) {
-          await axios.patch(`/api/kot/${relatedKot._id}/status`, {
-            status: newStatus
-          }, {
-            headers: { Authorization: `Bearer ${token}` }
-          });
-        }
-      } catch (kotError) {
-        console.error('Error updating KOT status:', kotError);
+      // Update orders list
+      setOrders(orders.map(order => 
+        order._id === orderId ? { ...order, status: newStatus } : order
+      ));
+      
+      // Update selected order
+      if (selectedOrder?._id === orderId) {
+        setSelectedOrder({ ...selectedOrder, status: newStatus });
       }
-      
-      // Notify other components about the status change
-      const updateData = {
-        orderId,
-        status: newStatus,
-        timestamp: Date.now()
-      };
-      localStorage.setItem('orderStatusUpdate', JSON.stringify(updateData));
-      
-      // Trigger custom event for same-window communication
-      window.dispatchEvent(new CustomEvent('orderStatusChanged', { detail: updateData }));
-      
-      fetchOrders();
     } catch (error) {
-      console.error('Error updating order status:', error);
+      console.error('Error updating status:', error);
+      alert('Failed to update status');
     }
   };
-
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'pending': return 'bg-yellow-100 text-yellow-800';
-      case 'preparing': return 'bg-blue-100 text-blue-800';
-      case 'ready': return 'bg-green-100 text-green-800';
-      case 'served': return 'bg-purple-100 text-purple-800';
-      case 'completed': return 'bg-gray-100 text-gray-800';
-      case 'cancelled': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  if (isInitialLoading) {
-    return <DashboardLoader pageName="All Orders" />;
-  }
-
-  const paginatedOrders = filteredOrders.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen" style={{opacity: loading ? 0.8 : 1, transition: 'opacity 0.3s ease-in-out'}}>
-      <div className="mb-6 animate-slideInLeft animate-delay-100">
-        <h1 className="text-2xl font-bold text-gray-800 mb-2">All Orders</h1>
-        <p className="text-gray-600">View and manage all restaurant orders</p>
-      </div>
-
-      {/* Filters */}
-      <div className="bg-white p-4 rounded-lg shadow mb-6 animate-fadeInUp animate-delay-200">
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Search</label>
-            <input
-              type="text"
-              placeholder="Search by Order ID, Customer, Table..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            >
-              <option value="">All Status</option>
-              <option value="pending">Pending</option>
-              <option value="preparing">Preparing</option>
-              <option value="ready">Ready</option>
-              <option value="served">Served</option>
-              <option value="completed">Completed</option>
-              <option value="cancelled">Cancelled</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Date</label>
-            <input
-              type="date"
-              value={dateFilter}
-              onChange={(e) => setDateFilter(e.target.value)}
-              className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Booking</label>
-            <select
-              value={bookingFilter}
-              onChange={(e) => setBookingFilter(e.target.value)}
-              className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            >
-              <option value="all">All Bookings</option>
-              {allBookings.filter(booking => booking.status === 'Checked In').map(booking => (
-                <option key={booking._id} value={booking._id}>
-                  {booking.grcNo} - {booking.name} (Room {booking.roomNumber})
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="flex items-end">
-            <button
-              onClick={() => {
-                setSearchQuery('');
-                setStatusFilter('');
-                setDateFilter('');
-                setBookingFilter('');
-              }}
-              className="w-full bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600"
-            >
-              Clear Filters
-            </button>
-          </div>
+    <div className="min-h-screen bg-gray-100 p-4 sm:p-6">
+      {/* Header */}
+      <div className="bg-[#1f2937] rounded-2xl p-4 mb-6 shadow-lg border border-[#c2ab65]">
+        <div className="flex justify-between items-center">
+          <h2 className="text-2xl font-bold text-[#c2ab65]">In-Room Dine-In Orders</h2>
+          <button
+            onClick={fetchOrders}
+            className="flex items-center space-x-2 px-4 py-2 bg-[#374151] hover:bg-[#4b5563] text-gray-300 rounded-xl transition-colors border border-gray-600"
+          >
+            <FiRefreshCw />
+            <span>Refresh</span>
+          </button>
         </div>
       </div>
 
-      {/* Orders Table */}
-      <div className="bg-white rounded-lg shadow overflow-hidden animate-fadeInUp animate-delay-300">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+      {/* Split View */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left Side - Order List */}
+        <div className="bg-[#1f2937] rounded-2xl overflow-hidden lg:col-span-1 shadow-lg border border-[#c2ab65]">
+          <div className="p-4 border-b border-[#c2ab65]">
+            <h3 className="text-xl font-bold text-[#c2ab65]">
+              <FiShoppingBag className="inline mr-2" />
+              Orders ({filteredOrders.length})
+            </h3>
+          </div>
+          <div className="overflow-y-auto max-h-[calc(100vh-300px)] p-4 space-y-3">
+            {loading ? (
+              <div className="flex justify-center items-center py-10">
+                <div className="animate-spin rounded-full h-8 w-8 border-2 border-[#c2ab65] border-t-transparent"></div>
+              </div>
+            ) : (
+              <>
+                {filteredOrders.map((order) => (
+                  <div
+                    key={order._id}
+                    onClick={() => setSelectedOrder(order)}
+                    className={`bg-[#2d3748] rounded-xl p-4 cursor-pointer transition-colors hover:bg-[#374151] border ${
+                      selectedOrder?._id === order._id ? 'border-[#c2ab65] shadow-lg' : 'border-gray-600'
+                    }`}
+                  >
+                    <div className="flex justify-between items-start mb-2">
+                      <div>
+                        <h4 className="font-bold text-white">{order.customerName || 'Guest'}</h4>
+                        <p className="text-xs text-gray-300">Room {order.tableNo || 'N/A'}</p>
+                      </div>
+                      <span className={`px-2 py-1 rounded-lg text-xs font-bold ${statusColors[order.status] || 'bg-gray-500 text-white'}`}>
+                        {order.status?.toUpperCase() || 'PENDING'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center text-sm">
+                      <div className="text-gray-300 text-sm cursor-pointer" onClick={(e) => {
+                        e.stopPropagation();
+                        setExpandedOrderItems(expandedOrderItems === order._id ? null : order._id);
+                      }}>
+                        <div className="flex items-center gap-1">
+                          <FiChevronDown className={`transition-transform ${expandedOrderItems === order._id ? 'rotate-180' : ''}`} />
+                          <span>{(order.items || []).length} items</span>
+                        </div>
+                        {expandedOrderItems === order._id && (
+                          <div className="mt-2 space-y-1">
+                            {(order.items || []).map((item, idx) => (
+                              <div key={idx} className="text-xs text-gray-400">{item.quantity}x {item.itemName || item.name}</div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      <span className="font-bold text-[#c2ab65]">{formatCurrency(order.amount)}</span>
+                    </div>
+                  </div>
+                ))}
+                {filteredOrders.length === 0 && (
+                  <div className="text-center py-10">
+                    <FiShoppingBag className="text-5xl mb-3 mx-auto text-gray-500" />
+                    <p className="text-gray-400 font-medium">No orders found</p>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* Right Side - Order Details */}
+        <div className="bg-[#1f2937] rounded-2xl overflow-hidden lg:col-span-2 shadow-lg border border-[#c2ab65]">
+          {selectedOrder ? (
+            <>
+              <div className="p-4 border-b border-[#c2ab65]">
+                <h3 className="text-xl font-bold text-[#c2ab65]">
+                  <FiFileText className="inline mr-2" />
                   Order Details
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Customer & Room
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Items
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Amount
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Non Chargeable
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Payment
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {paginatedOrders.map((order, index) => (
-                <tr key={order._id} className="hover:bg-gray-50 animate-fadeInUp" style={{animationDelay: `${Math.min(index * 50 + 400, 800)}ms`}}>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div>
-                      <div className="text-sm font-medium text-gray-900">
-                        {order.bookingId?.invoiceNumber ? `${order.bookingId.invoiceNumber}` : `#${order._id.slice(-6)}`}
-                      </div>
-                      <div className="text-sm text-gray-500">
-                        {new Date(order.createdAt).toLocaleDateString()} {' '}
-                        {new Date(order.createdAt).toLocaleTimeString([], {
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        })}
+                </h3>
+              </div>
+              <div className="p-6 space-y-4">
+                {/* Customer Info & Order Items */}
+                <div className="grid grid-cols-2 gap-4">
+                  {/* Customer Info */}
+                  <div className="bg-[#2d3748] rounded-xl p-4 border border-gray-600">
+                    <h4 className="font-bold text-[#c2ab65] mb-3">
+                      <FiUser className="inline mr-2" />
+                      Customer Information
+                    </h4>
+                    <div className="space-y-2 text-sm">
+                      <p className="text-white"><span className="font-medium">Name:</span> {selectedOrder.customerName || 'Guest'}</p>
+                      <p className="text-white"><span className="font-medium">Room:</span> {selectedOrder.tableNo || 'N/A'}</p>
+                      <p className="text-white"><span className="font-medium">Date:</span> {formatDate(selectedOrder.createdAt)}</p>
+                    </div>
+
+                    {/* Payment Breakdown */}
+                    <div className="mt-4 pt-3 border-t border-gray-600">
+                      <h5 className="font-semibold text-[#c2ab65] mb-2 text-xs">Payment Breakdown</h5>
+                      <div className="space-y-1 text-xs">
+                        <div className="flex justify-between text-gray-300">
+                          <span>Subtotal:</span>
+                          <span className="font-medium">{formatCurrency(selectedOrder.subtotal || 0)}</span>
+                        </div>
+                        <div className="flex justify-between text-gray-300">
+                          <span>SGST ({selectedOrder.sgstRate || 0}%):</span>
+                          <span className="font-medium">{formatCurrency(selectedOrder.sgstAmount || 0)}</span>
+                        </div>
+                        <div className="flex justify-between text-gray-300">
+                          <span>CGST ({selectedOrder.cgstRate || 0}%):</span>
+                          <span className="font-medium">{formatCurrency(selectedOrder.cgstAmount || 0)}</span>
+                        </div>
+                        <div className="flex justify-between pt-1 border-t border-gray-600 font-bold text-[#c2ab65]">
+                          <span>Total:</span>
+                          <span className="text-sm">{formatCurrency(selectedOrder.amount)}</span>
+                        </div>
                       </div>
                     </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div>
-                      <div className="text-sm font-medium text-gray-900">
-                        {order.customerName || 'N/A'}
-                      </div>
-                      <div className="text-sm text-gray-500">
-                        Room {order.tableNo || 'N/A'}
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="text-sm text-gray-900">
-                      {order.items?.length || 0} items
-                    </div>
-                    <div className="text-xs text-gray-500 max-w-xs">
-                      {order.items?.slice(0, 2).map((item, index) => (
-                        <div key={index}>
-                          {item.itemName || 'Unknown'} x{item.quantity || 1}
+                  </div>
+
+                  {/* Order Items */}
+                  <div className="bg-[#2d3748] rounded-xl p-4 border border-gray-600">
+                    <h4 className="font-bold text-[#c2ab65] mb-3">
+                      <FiShoppingBag className="inline mr-2" />
+                      Order Items
+                    </h4>
+                    <div className="space-y-2 max-h-60 overflow-y-auto">
+                      {(selectedOrder.items || []).map((item, index) => (
+                        <div key={index} className="flex justify-between items-start text-sm p-2 rounded-lg bg-[#374151]">
+                          <div className="flex-1">
+                            <p className="font-medium text-white">{item.quantity}x {item.itemName || item.name}</p>
+                            {item.variation && <p className="text-xs text-gray-300">Variation: {item.variation.name}</p>}
+                            {item.addons && item.addons.length > 0 && (
+                              <p className="text-xs text-gray-300">Addons: {item.addons.map(a => a.name).join(', ')}</p>
+                            )}
+                          </div>
+                          <span className="font-bold text-[#c2ab65]">{formatCurrency(item.price * item.quantity)}</span>
                         </div>
                       ))}
-                      {order.items?.length > 2 && (
-                        <div>+{order.items.length - 2} more...</div>
-                      )}
                     </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">
-                      ₹{order.amount || 0}
+                  </div>
+                </div>
+
+                {/* Order Actions */}
+                <div className="bg-[#2d3748] rounded-xl p-4 border border-gray-600">
+                  <div className="flex justify-between items-center mb-4">
+                    <div className="flex items-center gap-3">
+                      <span className="text-white font-medium">Status:</span>
+                      <select
+                        value={selectedOrder.status}
+                        onChange={(e) => updateOrderStatus(selectedOrder._id, e.target.value)}
+                        className="px-3 py-2 bg-[#374151] border border-gray-600 rounded-lg text-white font-medium focus:outline-none focus:ring-2 focus:ring-[#c2ab65]"
+                      >
+                        <option value="pending">Pending</option>
+                        <option value="preparing">Preparing</option>
+                        <option value="ready">Ready</option>
+                        <option value="served">Served</option>
+                        <option value="completed">Completed</option>
+                        <option value="cancelled">Cancelled</option>
+                      </select>
                     </div>
-                    {(order.subtotal || order.sgstAmount || order.cgstAmount) && (
-                      <div className="text-xs text-gray-500">
-                        <div>Subtotal: ₹{order.subtotal || 0}</div>
-                        <div>SGST: ₹{order.sgstAmount || 0} ({order.sgstRate || 0}%)</div>
-                        <div>CGST: ₹{order.cgstAmount || 0} ({order.cgstRate || 0}%)</div>
-                      </div>
+                    <span className="text-2xl font-bold text-[#c2ab65]">{formatCurrency(selectedOrder.amount)}</span>
+                  </div>
+                  <div className="flex space-x-2">
+                    {selectedOrder.status === 'served' && (
+                      <button
+                        onClick={() => updateOrderStatus(selectedOrder._id, 'completed')}
+                        className="flex-1 p-3 bg-green-600 hover:bg-green-700 text-white rounded-xl font-semibold transition-colors shadow-lg"
+                      >
+                        <FiCheckCircle className="inline mr-1" />
+                        Complete
+                      </button>
                     )}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 py-1 text-xs font-semibold rounded ${
-                      order.nonChargeable ? 'bg-orange-100 text-orange-800' : 'bg-gray-100 text-gray-800'
-                    }`}>
-                      {order.nonChargeable ? 'True' : 'False'}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 py-1 text-xs font-semibold rounded ${getStatusColor(order.status)}`}>
-                      {order.status || 'pending'}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 py-1 text-xs font-semibold rounded ${
-                      order.paymentStatus === 'paid' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                    }`}>
-                      {order.paymentStatus || 'unpaid'}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <div className="flex space-x-2">
-                      {!['paid', 'completed', 'cancelled'].includes(order.status) && (
-                        <button
-                          onClick={() => navigate(`/inroomdinein/edit-order/${order._id}`)}
-                          className="bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600"
-                        >
-                          Edit
-                        </button>
-                      )}
-                      {hasRole('ADMIN') && (
-                        <button
-                          onClick={() => updateOrderStatus(order._id, 'cancelled')}
-                          className="bg-red-500 text-white px-3 py-1 rounded text-sm hover:bg-red-600"
-                        >
-                          Delete
-                        </button>
-                      )}
-                      {order.status === 'served' && (
-                        <>
-                          <button
-                            onClick={() => updateOrderStatus(order._id, 'completed')}
-                            className="bg-green-500 text-white px-3 py-1 rounded text-sm hover:bg-green-600"
-                          >
-                            Complete
-                          </button>
-                          <button
-                            onClick={() => printKOT(order._id)}
-                            className="bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600"
-                          >
-                            KOT
-                          </button>
-                        </>
-                      )}
-                      {(order.status === 'pending' || order.status === 'preparing' || order.status === 'ready') && (
-                        <button
-                          onClick={() => printKOT(order._id)}
-                          className="bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600"
-                        >
-                          KOT
-                        </button>
-                      )}
-                      {order.status === 'completed' && (
-                        <button
-                          onClick={() => printKOT(order._id)}
-                          className="bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600"
-                        >
-                          KOT
-                        </button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                    <button
+                      onClick={() => navigate(`/inroomdinein/invoice/${selectedOrder._id}`)}
+                      className="flex-1 p-3 bg-[#374151] hover:bg-[#4b5563] text-white rounded-xl font-semibold transition-colors border border-gray-600"
+                    >
+                      <FiFileText className="inline mr-1" />
+                      View
+                    </button>
+                    <button
+                      onClick={() => printKOT(selectedOrder._id)}
+                      className="flex-1 p-3 bg-[#c2ab65] hover:bg-[#d4bc7a] text-[#1f2937] rounded-xl font-semibold transition-colors shadow-lg"
+                    >
+                      <FiClock className="inline mr-1" />
+                      POS
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="flex items-center justify-center h-full p-10">
+              <div className="text-center">
+                <FiChevronLeft className="text-6xl mb-4 mx-auto text-gray-500" />
+                <p className="text-gray-400 font-medium text-lg">Select an order to view details</p>
+              </div>
+            </div>
+          )}
         </div>
-
-        {filteredOrders.length === 0 && (
-          <div className="text-center py-12">
-            <div className="text-gray-400 text-lg mb-2">📋</div>
-            <div className="text-gray-500">No orders found</div>
-          </div>
-        )}
       </div>
-
-      {/* Pagination */}
-      {filteredOrders.length > 0 && (
-        <div className="mt-6">
-          <Pagination
-            currentPage={currentPage}
-            totalPages={Math.ceil(filteredOrders.length / itemsPerPage)}
-            onPageChange={setCurrentPage}
-            itemsPerPage={itemsPerPage}
-            totalItems={filteredOrders.length}
-          />
-        </div>
-      )}
     </div>
   );
 };

@@ -85,29 +85,24 @@ const Order = () => {
 
 
   return (
-    <div className="min-h-screen font-sans p-4 sm:p-6 bg-gradient-to-br from-[#f7f5ef] to-[#c3ad6b]/30">
-      <div className="w-full bg-white/90 backdrop-blur-sm shadow-xl rounded-2xl p-6 sm:p-8 mb-8 border border-[#c3ad6b]/30 animate-slideInLeft animate-delay-100">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-3">
-            <h2 className="text-xl font-bold text-[#b39b5a]">Create New Order</h2>
-            {location.state?.isDineIn && (
-              <span className="px-3 py-1 bg-[#8B4513] text-white text-xs font-medium rounded-full">
-                Dine In - Room Service
-              </span>
-            )}
+    <div className="min-h-screen bg-gray-100 p-4 sm:p-6">
+      {/* Header Section */}
+      <div className="bg-[#1f2937] rounded-2xl p-6 mb-6 shadow-lg border border-[#c2ab65]">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h2 className="text-2xl font-bold text-white">Create New Order</h2>
+            <p className="text-sm text-gray-400 mt-1">In-Room Dining Service</p>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-            <span className="text-xs font-medium text-green-600">
-              System Active
-            </span>
+            <div className="w-2 h-2 rounded-full bg-[#c2ab65] animate-pulse"></div>
+            <span className="text-xs font-medium text-[#c2ab65]">System Active</span>
           </div>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 w-full">
-          <div className="flex flex-col space-y-3">
-            <label htmlFor="table-number" className="font-bold text-[#b39b5a]">Room Number</label>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">Room Number *</label>
             <select 
-              id="table-number" 
               value={orderData.tableNo}
               onChange={(e) => {
                 const selectedRoom = tables.find(room => room.tableNumber === e.target.value);
@@ -117,7 +112,7 @@ const Order = () => {
                   customerName: selectedRoom?.guestName || ''
                 });
               }}
-              className="w-full rounded-xl p-4 border-2 border-orange-200 focus:border-orange-500 focus:ring-2 focus:ring-orange-200 text-gray-700 bg-white/80 backdrop-blur-sm transition-all duration-200"
+              className="w-full bg-[#374151] border border-gray-600 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#c2ab65] text-gray-300"
             >
               <option value="">Select Room</option>
               {tables.map(room => (
@@ -126,27 +121,22 @@ const Order = () => {
                 </option>
               ))}
             </select>
-            {bookingFilter !== 'all' && tables.length === 0 && (
-              <p className="text-sm text-orange-600 mt-1">
-                No rooms available for selected booking
-              </p>
-            )}
           </div>
-          <div className="flex flex-col space-y-3">
-            <label htmlFor="customerName" className="font-bold text-[#b39b5a]">Customer Name</label>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">Customer Name</label>
             <input
-              id="customerName"
               type="text"
               value={orderData.customerName}
               onChange={(e) => setOrderData({...orderData, customerName: e.target.value})}
-              className="w-full rounded-xl p-4 border-2 border-orange-200 focus:border-orange-500 focus:ring-2 focus:ring-orange-200 text-gray-700 bg-white/80 backdrop-blur-sm transition-all duration-200"
+              className="w-full bg-[#374151] border border-gray-600 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#c2ab65] text-gray-300 placeholder-gray-500"
               placeholder="Customer Name"
             />
           </div>
-          <div className="flex flex-col space-y-3">
-            <label htmlFor="sgst-rate" className="font-bold text-[#b39b5a]">SGST Rate (%)</label>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">SGST Rate (%)</label>
             <input
-              id="sgst-rate"
               type="number"
               step="0.1"
               min="0"
@@ -157,14 +147,14 @@ const Order = () => {
                 sgstRate: parseFloat(e.target.value) || 0,
                 gstRate: (parseFloat(e.target.value) || 0) + gstRates.cgstRate
               })}
-              className="w-full rounded-xl p-4 border-2 border-orange-200 focus:border-orange-500 focus:ring-2 focus:ring-orange-200 text-gray-700 bg-white/80 backdrop-blur-sm transition-all duration-200"
+              className="w-full bg-[#374151] border border-gray-600 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#c2ab65] text-gray-300 placeholder-gray-500"
               placeholder="2.5"
             />
           </div>
-          <div className="flex flex-col space-y-3">
-            <label htmlFor="cgst-rate" className="font-bold text-[#b39b5a]">CGST Rate (%)</label>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">CGST Rate (%)</label>
             <input
-              id="cgst-rate"
               type="number"
               step="0.1"
               min="0"
@@ -175,64 +165,60 @@ const Order = () => {
                 cgstRate: parseFloat(e.target.value) || 0,
                 gstRate: gstRates.sgstRate + (parseFloat(e.target.value) || 0)
               })}
-              className="w-full rounded-xl p-4 border-2 border-orange-200 focus:border-orange-500 focus:ring-2 focus:ring-orange-200 text-gray-700 bg-white/80 backdrop-blur-sm transition-all duration-200"
+              className="w-full bg-[#374151] border border-gray-600 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#c2ab65] text-gray-300 placeholder-gray-500"
               placeholder="2.5"
             />
           </div>
         </div>
       </div>
 
-      {/* Search and Filter section */}
-      <div className="w-full bg-white/90 backdrop-blur-sm shadow-xl rounded-2xl p-6 sm:p-8 mb-8 border border-[#c3ad6b]/30 animate-fadeInUp animate-delay-200">
-        <label htmlFor="search-menu" className="block font-bold mb-4 text-lg text-[#b39b5a]">Search & Filter Menu</label>
+      {/* Search Section */}
+      <div className="bg-[#1f2937] rounded-2xl p-6 mb-6 shadow-lg border border-[#c2ab65]">
+        <h3 className="text-lg font-semibold text-white mb-4">Search Menu</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="relative">
             <input
-              id="search-menu"
               type="text"
               placeholder="Search menu items..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full rounded-xl pl-12 pr-4 py-4 border-2 border-[#c3ad6b]/30 focus:border-[#c3ad6b] focus:ring-2 focus:ring-[#c3ad6b]/20 text-gray-700 bg-white/80 backdrop-blur-sm transition-all duration-200 text-base"
+              className="w-full bg-[#374151] border border-gray-600 rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#c2ab65] text-gray-300 placeholder-gray-500"
             />
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 absolute left-4 top-1/2 transform -translate-y-1/2 text-[#c3ad6b]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
           </div>
-          <div>
-            <select
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-              className="w-full rounded-xl px-4 py-4 border-2 border-[#c3ad6b]/30 focus:border-[#c3ad6b] focus:ring-2 focus:ring-[#c3ad6b]/20 text-gray-700 bg-white/80 backdrop-blur-sm transition-all duration-200 text-base"
-            >
-              <option value="">All Categories</option>
-              {categories.map(category => (
-                <option key={category._id} value={category._id}>
-                  {category.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
+          <select
+            value={selectedCategory}
+            onChange={(e) => setSelectedCategory(e.target.value)}
+            className="w-full bg-[#374151] border border-gray-600 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#c2ab65] text-gray-300"
+          >
+            <option value="">All Categories</option>
+            {categories.map(category => (
+              <option key={category._id} value={category._id}>
+                {category.name}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
 
-      {/* Menu grid */}
-      <div className="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6 animate-fadeInUp animate-delay-300">
+      {/* Menu Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         {isMenuLoading ? (
           // Loading skeleton for menu items
           Array.from({ length: 8 }).map((_, index) => (
-            <div key={index} className="bg-white/90 backdrop-blur-sm p-6 rounded-2xl shadow-xl border-2 border-[#c3ad6b]/30 animate-pulse">
-              <div className="h-6 bg-gray-200 rounded mb-2"></div>
-              <div className="h-4 bg-gray-200 rounded mb-4 w-3/4"></div>
-              <div className="h-5 bg-gray-200 rounded mb-4 w-1/2"></div>
-              <div className="h-10 bg-gray-200 rounded"></div>
+            <div key={index} className="bg-[#374151] rounded-2xl p-4 shadow-lg border border-gray-600 animate-pulse">
+              <div className="h-5 bg-gray-600 rounded mb-2"></div>
+              <div className="h-4 bg-gray-600 rounded mb-3 w-3/4"></div>
+              <div className="h-4 bg-gray-600 rounded mb-3 w-1/2"></div>
+              <div className="h-9 bg-gray-600 rounded"></div>
             </div>
           ))
         ) : categoryFilteredMenu.length === 0 ? (
-          <div className="col-span-full text-center py-12">
-            <div className="text-gray-400 text-lg mb-2">🍽️</div>
-            <div className="text-gray-500">No menu items found</div>
+          <div className="col-span-full text-center py-12 bg-[#374151] rounded-2xl shadow-lg border border-gray-600">
+            <div className="text-gray-500 text-4xl mb-2">🍽️</div>
+            <div className="text-gray-400">No menu items found</div>
           </div>
         ) : (
           categoryFilteredMenu.map((item, index) => {
@@ -244,17 +230,17 @@ const Order = () => {
               }
             }
             return (
-          <div key={item._id} className="bg-white/90 backdrop-blur-sm p-6 rounded-2xl shadow-xl border-2 border-[#c3ad6b]/30 hover:border-[#c3ad6b] hover:shadow-2xl transition-all duration-300 transform hover:scale-105 animate-scaleIn" style={{animationDelay: `${Math.min(index * 50 + 400, 800)}ms`}}>
-            <h3 className="text-xl font-bold truncate text-[#b39b5a] mb-2">{item.name}</h3>
-            <p className="text-sm mb-2 text-[#c3ad6b] font-medium">{item.foodType}</p>
-            {item.description && <p className="text-xs text-gray-600 mb-3 line-clamp-2">{item.description}</p>}
-            <p className="mb-4 font-bold text-lg text-gray-800">₹{displayPrice.toFixed(2)}</p>
+          <div key={item._id} className="bg-[#374151] rounded-2xl p-4 shadow-lg border border-gray-600 hover:border-[#c2ab65] transition-all duration-200">
+            <h3 className="text-base font-semibold text-white mb-1 truncate">{item.name}</h3>
+            <p className="text-xs text-gray-400 mb-2">{item.foodType}</p>
+            {item.description && <p className="text-xs text-gray-500 mb-3 line-clamp-2">{item.description}</p>}
+            <p className="mb-3 font-bold text-lg text-[#c2ab65]">₹{displayPrice.toFixed(2)}</p>
 
             {cartItems.some(i => i._id === item._id) ? (
-              <div className="flex flex-col sm:flex-row items-center justify-between space-y-2 sm:space-y-0">
+              <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
                   <button
-                    className="bg-border text-text w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center hover:bg-secondary transition-colors text-sm sm:text-base"
+                    className="bg-gray-600 text-gray-300 w-7 h-7 rounded-full flex items-center justify-center hover:bg-gray-700 transition-colors text-sm"
                     onClick={() => {
                       const cartItem = cartItems.find(i => i._id === item._id);
                       if (cartItem) handleQuantityChange(cartItem.cartKey, -1);
@@ -262,11 +248,11 @@ const Order = () => {
                   >
                     -
                   </button>
-                  <span className="font-bold text-text text-sm sm:text-base min-w-[20px] text-center">
+                  <span className="font-bold text-white text-sm min-w-[20px] text-center">
                     {cartItems.find(i => i._id === item._id)?.quantity}
                   </span>
                   <button
-                    className="bg-primary text-background w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center hover:bg-hover transition-colors text-sm sm:text-base"
+                    className="bg-[#c2ab65] text-[#1f2937] w-7 h-7 rounded-full flex items-center justify-center hover:bg-[#d4bc7a] transition-colors text-sm font-bold"
                     onClick={() => {
                       const cartItem = cartItems.find(i => i._id === item._id);
                       if (cartItem) handleQuantityChange(cartItem.cartKey, 1);
@@ -276,7 +262,7 @@ const Order = () => {
                   </button>
                 </div>
                 <button
-                  className="text-primary hover:text-hover transition-colors duration-200 text-xs sm:text-sm px-2 py-1 rounded"
+                  className="text-red-600 hover:text-red-700 transition-colors text-xs font-medium"
                   onClick={() => {
                     const cartItem = cartItems.find(i => i._id === item._id);
                     if (cartItem) handleRemoveItem(item._id, cartItem.cartKey);
@@ -287,7 +273,7 @@ const Order = () => {
               </div>
             ) : (
               <button
-                className="w-full bg-gradient-to-r from-[#c3ad6b] to-[#b39b5a] text-white py-3 rounded-xl font-bold hover:from-[#b39b5a] hover:to-[#c3ad6b] transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
+                className="w-full bg-[#c2ab65] hover:bg-[#d4bc7a] text-[#1f2937] py-2 rounded-xl font-semibold transition-colors text-sm shadow-lg"
                 onClick={() => {
                   const hasMultipleVariations = item.variations?.length > 1;
                   const hasAddons = item.addons?.length > 0;
@@ -323,7 +309,7 @@ const Order = () => {
       <div className="fixed bottom-6 right-6 z-40">
         <div className="relative">
           <button
-            className="p-4 rounded-full shadow-xl bg-gradient-to-r from-[#c3ad6b] to-[#b39b5a] text-white transition-all duration-300 transform hover:scale-110 hover:shadow-2xl focus:outline-none focus:ring-4 focus:ring-[#c3ad6b]/30"
+            className="p-4 rounded-full shadow-lg bg-[#c2ab65] hover:bg-[#d4bc7a] text-[#1f2937] transition-all duration-200"
             onClick={() => setIsCartOpen(!isCartOpen)}
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -331,7 +317,7 @@ const Order = () => {
             </svg>
           </button>
           {cartItems.length > 0 && (
-            <span className="absolute -top-2 -right-2 bg-gradient-to-r from-[#b39b5a] to-[#c3ad6b] text-white text-xs font-bold w-6 h-6 flex items-center justify-center rounded-full shadow-lg animate-pulse">
+            <span className="absolute -top-2 -right-2 bg-[#c2ab65] text-[#1f2937] text-xs font-bold w-6 h-6 flex items-center justify-center rounded-full shadow-lg">
               {cartItems.length}
             </span>
           )}
@@ -373,11 +359,11 @@ const Order = () => {
                             name="variation"
                             checked={selectedVariation?._id === variation._id}
                             onChange={() => setSelectedVariation(variation)}
-                            className="h-4 w-4 text-[#c3ad6b] focus:ring-[#c3ad6b]"
+                            className="h-4 w-4 text-[#c2ab65] focus:ring-[#c2ab65]"
                           />
                           <span className="text-gray-800">{variation.name}</span>
                         </div>
-                        <span className="font-semibold text-gray-800">₹{Number(variation.price || 0).toFixed(2)}</span>
+                        <span className="font-semibold text-gray-900">₹{Number(variation.price || 0).toFixed(2)}</span>
                       </label>
                     ))}
                   </div>
@@ -401,11 +387,11 @@ const Order = () => {
                                 setSelectedAddons(selectedAddons.filter(a => a._id !== addon._id));
                               }
                             }}
-                            className="h-4 w-4 text-[#c3ad6b] focus:ring-[#c3ad6b] rounded"
+                            className="h-4 w-4 text-[#c2ab65] focus:ring-[#c2ab65] rounded"
                           />
                           <span className="text-gray-800">{addon.name}</span>
                         </div>
-                        <span className="font-semibold text-gray-800">₹{Number(addon.price || 0).toFixed(2)}</span>
+                        <span className="font-semibold text-gray-900">₹{Number(addon.price || 0).toFixed(2)}</span>
                       </label>
                     ))}
                   </div>
@@ -415,7 +401,7 @@ const Order = () => {
 
             <div className="border-t p-4">
               <button
-                className="w-full py-3 px-4 rounded-md text-white bg-gradient-to-r from-[#c3ad6b] to-[#b39b5a] font-semibold hover:from-[#b39b5a] hover:to-[#c3ad6b] transition-all duration-200"
+                className="w-full py-3 px-4 rounded-xl text-[#1f2937] bg-[#c2ab65] hover:bg-[#d4bc7a] font-semibold transition-colors shadow-lg"
                 onClick={() => {
                   const itemToAdd = {
                     ...selectedItem,
@@ -488,7 +474,7 @@ const Order = () => {
                                 </div>
                               )}
                               <div className="text-xs text-gray-500">{categories.find(cat => cat._id === item.category)?.name || item.foodType}</div>
-                              <div className="text-xs font-semibold text-[#c3ad6b]">₹{(item.Price || item.price || 0).toFixed(2)} each</div>
+                              <div className="text-xs font-semibold text-gray-900">₹{(item.Price || item.price || 0).toFixed(2)} each</div>
                               {hasRole(['ADMIN', 'GM', 'FRONT DESK', 'STAFF']) && (
                                 <label className="flex items-center gap-1 mt-1">
                                   <input
@@ -502,9 +488,9 @@ const Order = () => {
                                       );
                                       setCartItems(updatedItems);
                                     }}
-                                    className="h-3 w-3 rounded border-gray-300 text-orange-600 focus:ring-orange-500"
+                                    className="h-3 w-3 rounded border-gray-300 text-[#c2ab65] focus:ring-[#c2ab65]"
                                   />
-                                  <span className="text-xs text-orange-600">NC</span>
+                                  <span className="text-xs text-[#c2ab65]">NC</span>
                                 </label>
                               )}
                             </div>
@@ -512,14 +498,14 @@ const Order = () => {
                           <td className="py-3 text-center">
                             <div className="flex items-center justify-center space-x-1">
                               <button
-                                className="bg-gray-200 text-gray-700 w-6 h-6 rounded-full flex items-center justify-center hover:bg-gray-300 transition-colors text-xs"
+                                className="bg-gray-600 text-gray-300 w-6 h-6 rounded-full flex items-center justify-center hover:bg-gray-700 transition-colors text-xs"
                                 onClick={() => handleQuantityChange(item.cartKey, -1)}
                               >
                                 -
                               </button>
                               <span className="font-bold text-gray-800 w-6 text-center">{item.quantity}</span>
                               <button
-                                className="bg-[#c3ad6b] text-white w-6 h-6 rounded-full flex items-center justify-center hover:bg-[#b39b5a] transition-colors text-xs"
+                                className="bg-[#c2ab65] text-[#1f2937] w-6 h-6 rounded-full flex items-center justify-center hover:bg-[#d4bc7a] transition-colors text-xs font-bold"
                                 onClick={() => handleQuantityChange(item.cartKey, 1)}
                               >
                                 +
@@ -576,7 +562,7 @@ const Order = () => {
                     Clear All
                   </button>
                   <button
-                    className="w-full py-3 px-4 rounded-md text-white bg-gradient-to-r from-[#c3ad6b] to-[#b39b5a] font-semibold hover:from-[#b39b5a] hover:to-[#c3ad6b] transition-all duration-200 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full py-3 px-4 rounded-xl text-[#1f2937] bg-[#c2ab65] hover:bg-[#d4bc7a] font-semibold transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
                     onClick={() => {
                       const hasAnyFreeItems = cartItems.some(item => item.isFree);
                       handlePlaceOrder(hasAnyFreeItems, navigate);
