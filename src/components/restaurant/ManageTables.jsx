@@ -283,17 +283,6 @@ const ManageTables = () => {
                 <option value="maintenance">Maintenance</option>
               </select>
             </div>
-            <div className="flex items-center">
-              <input
-                type="checkbox"
-                name="isActive"
-                id="isActive"
-                checked={newTable.isActive}
-                onChange={handleInputChange}
-                className="h-4 w-4 text-primary rounded-md border-border focus:ring-primary"
-              />
-              <label htmlFor="isActive" className="ml-2 block text-sm font-medium text-text">Is Active</label>
-            </div>
             <div className="col-span-1 sm:col-span-2 md:col-span-3 flex justify-end gap-3">
               {isEditing && (
                 <button
@@ -322,7 +311,6 @@ const ManageTables = () => {
               <p className="text-sm text-gray-600">Capacity: <span className="font-semibold">{table.capacity}</span></p>
               <p className="text-sm text-gray-600">Location: <span className="font-semibold capitalize">{table.location.replace('_', ' ')}</span></p>
               <p className="text-sm text-gray-600">Status: <span className="font-semibold capitalize">{table.status}</span></p>
-              <p className="text-sm text-gray-600">Active: <span className="font-semibold">{table.isActive ? 'Yes' : 'No'}</span></p>
 
               {/* Action Buttons */}
               <div className="mt-4 space-y-2">
