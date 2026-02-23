@@ -49,19 +49,62 @@ const KOT = () => {
   const fetchKitchenOrders = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/kitchen/all/kitchen/orders`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
       
-      if (response.ok) {
-        const data = await response.json();
-        const activeKots = (data.kots || []).filter(kot => 
-          kot.status !== 'DELIVERED' && 
-          kot.status !== 'CANCELLED' && 
-          kot.status !== 'PAID'
-        );
-        setKots(activeKots);
+      // Fetch both kitchen orders and in-room orders
+      const [kitchenResponse, inRoomResponse] = await Promise.all([
+        fetch(`${import.meta.env.VITE_API_URL}/api/kitchen/all/kitchen/orders`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        }),
+        fetch(`${import.meta.env.VITE_API_URL}/api/inroom-orders/all`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        }).catch(() => ({ ok: false }))
+      ]);
+      
+      let allKots = [];
+      
+      // Process kitchen orders
+      if (kitchenResponse.ok) {
+        const kitchenData = await kitchenResponse.json();
+        allKots = kitchenData.kots || [];
       }
+      
+      // Process in-room orders
+      if (inRoomResponse.ok) {
+        const inRoomData = await inRoomResponse.json();
+        const inRoomOrders = Array.isArray(inRoomData) ? inRoomData : [];
+        
+        // Convert in-room orders to KOT format
+        const inRoomKots = inRoomOrders
+          .filter(order => order.status !== 'completed' && order.status !== 'cancelled')
+          .map(order => ({
+            _id: order._id,
+            orderNumber: order._id.slice(-6),
+            tableNo: order.tableNo,
+            status: order.status?.toUpperCase() || 'PENDING',
+            items: (order.items || []).map(item => ({
+              name: item.itemName || item.name,
+              quantity: item.quantity,
+              status: order.status?.toUpperCase() || 'PENDING',
+              prepTime: 15,
+              note: item.note
+            })),
+            extraItems: [],
+            createdAt: order.createdAt,
+            startedAt: order.status === 'preparing' ? order.updatedAt : null,
+            isInRoomOrder: true
+          }));
+        
+        allKots = [...allKots, ...inRoomKots];
+      }
+      
+      const activeKots = allKots.filter(kot => 
+        kot.status !== 'DELIVERED' && 
+        kot.status !== 'CANCELLED' && 
+        kot.status !== 'PAID' &&
+        kot.status !== 'COMPLETED'
+      );
+      
+      setKots(activeKots);
     } catch (error) {
       console.error('Error fetching kitchen orders:', error);
     }
@@ -77,6 +120,14 @@ const KOT = () => {
 
   const updateItemStatus = async (kotId, itemIndex, newStatus, isExtraItem = false) => {
     try {
+      const kot = kots.find(k => k._id === kotId);
+      
+      // If it's an in-room order, update the entire order status instead
+      if (kot?.isInRoomOrder) {
+        await updateKOTStatus(kotId, newStatus);
+        return;
+      }
+      
       const token = localStorage.getItem('token');
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/kot/${kotId}/item/${itemIndex}/status`, {
         method: 'PATCH',
@@ -99,7 +150,9 @@ const KOT = () => {
 
   const updateKOTStatus = async (kotId, newStatus) => {
     try {
-      if (newStatus === 'DELIVERED' || newStatus === 'CANCELLED' || newStatus === 'PAID') {
+      const kot = kots.find(k => k._id === kotId);
+      
+      if (newStatus === 'DELIVERED' || newStatus === 'CANCELLED' || newStatus === 'PAID' || newStatus === 'COMPLETED') {
         setKots(prev => prev.filter(kot => kot._id !== kotId));
       } else {
         setKots(prev => prev.map(kot => 
@@ -108,17 +161,34 @@ const KOT = () => {
       }
 
       const token = localStorage.getItem('token');
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/kot/${kotId}/status`, {
-        method: 'PATCH',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ status: newStatus })
-      });
       
-      if (!response.ok) {
-        fetchKitchenOrders();
+      // Use different endpoint for in-room orders
+      if (kot?.isInRoomOrder) {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/inroom-orders/${kotId}/status`, {
+          method: 'PATCH',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ status: newStatus.toLowerCase() })
+        });
+        
+        if (!response.ok) {
+          fetchKitchenOrders();
+        }
+      } else {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/kot/${kotId}/status`, {
+          method: 'PATCH',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ status: newStatus })
+        });
+        
+        if (!response.ok) {
+          fetchKitchenOrders();
+        }
       }
     } catch (error) {
       console.error('Error updating KOT status:', error);
@@ -240,10 +310,16 @@ const KOT = () => {
                     <div>
                       <h3 className="font-bold text-base">{kot.kotNumber}</h3>
                       <p className="text-[10px] opacity-90">{kot.orderNumber}</p>
+                      {kot.isInRoomOrder && (
+                        <span className="text-[9px] bg-[#1f2937] text-[#c2ab65] px-2 py-0.5 rounded mt-1 inline-block font-semibold">
+                          IN-ROOM
+                        </span>
+                      )}
                     </div>
                     <div className="text-right text-[10px]">
                       <div className="flex items-center gap-1 justify-end"><FiClock size={10} /> {new Date(kot.createdAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</div>
                       {kot.tableNumber && <div className="flex items-center gap-1 justify-end"><FiPackage size={10} /> {kot.tableNumber}</div>}
+                      {kot.isInRoomOrder && kot.tableNo && <div className="flex items-center gap-1 justify-end"><FiPackage size={10} /> Room {kot.tableNo}</div>}
                     </div>
                   </div>
 

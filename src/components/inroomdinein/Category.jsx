@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useAppContext } from "../../context/AppContext";
 import { useAuth } from "../../context/AuthContext";
 import { showToast } from "../../utils/toaster";
-import { ArrowLeft } from 'lucide-react';
+import { FiArrowLeft, FiPlus, FiEdit2, FiTrash2 } from 'react-icons/fi';
 import DashboardLoader from '../DashboardLoader';
 
 // Add CSS animations
@@ -106,55 +106,57 @@ const Category = ({ onBackToItems }) => {
   }
 
   return (
-    <div className="p-4 sm:p-6" style={{ backgroundColor: 'hsl(45, 100%, 95%)' }}>
+    <div className="p-4 sm:p-6 min-h-screen bg-gray-100">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4 animate-slideInLeft animate-delay-100">
         <div className="flex items-center gap-4">
           <button
             onClick={onBackToItems}
-            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors shadow-md"
+            style={{ backgroundColor: '#374151', color: '#d1d5db' }}
           >
-            <ArrowLeft size={16} />
+            <FiArrowLeft />
             Back to Items
           </button>
-          <h2 className="text-xl sm:text-2xl font-semibold">Restaurant Categories</h2>
+          <h2 className="text-xl sm:text-2xl font-semibold text-gray-800">Restaurant Categories</h2>
         </div>
         <button
           onClick={() => setShowForm(true)}
-          className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 w-full sm:w-auto"
+          className="flex items-center gap-2 px-4 py-2 rounded-lg w-full sm:w-auto transition-colors hover:opacity-90 shadow-md"
+          style={{ backgroundColor: '#c2ab65', color: '#1f2937' }}
         >
-          Add Category
+          <FiPlus /> Add Category
         </button>
       </div>
 
       {showForm && (
-        <div className="bg-white p-4 sm:p-6 rounded-lg shadow-md mb-6 animate-fadeInUp animate-delay-200">
-          <h3 className="text-lg font-semibold mb-4">{editingCategory ? 'Edit' : 'Add'} Category</h3>
+        <div className="p-4 sm:p-6 rounded-lg shadow-xl mb-6 animate-fadeInUp animate-delay-200" style={{ backgroundColor: '#374151' }}>
+          <h3 className="text-lg font-semibold mb-4 text-white">{editingCategory ? 'Edit' : 'Add'} Category</h3>
           <form onSubmit={handleSubmit} className="space-y-4">
             <input
               type="text"
               placeholder="Category Name"
               value={formData.name}
               onChange={(e) => setFormData({...formData, name: e.target.value})}
-              className="border rounded-lg px-3 py-2 w-full"
+              className="w-full rounded-lg px-3 py-2 bg-gray-700 text-white border border-gray-600 focus:border-[#c2ab65] focus:outline-none"
               required
             />
             <textarea
               placeholder="Description"
               value={formData.description}
               onChange={(e) => setFormData({...formData, description: e.target.value})}
-              className="border rounded-lg px-3 py-2 w-full"
+              className="w-full rounded-lg px-3 py-2 bg-gray-700 text-white border border-gray-600 focus:border-[#c2ab65] focus:outline-none"
               rows="3"
             />
             <select
               value={formData.status}
               onChange={(e) => setFormData({...formData, status: e.target.value})}
-              className="border rounded-lg px-3 py-2 w-full"
+              className="w-full rounded-lg px-3 py-2 bg-gray-700 text-white border border-gray-600 focus:border-[#c2ab65] focus:outline-none"
             >
               <option value="active">Active</option>
               <option value="inactive">Inactive</option>
             </select>
             <div className="flex space-x-2">
-              <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded-lg">
+              <button type="submit" className="px-4 py-2 rounded-lg transition-colors hover:opacity-90" style={{ backgroundColor: '#c2ab65', color: '#1f2937' }}>
                 {editingCategory ? 'Update' : 'Add'}
               </button>
               <button
@@ -164,7 +166,7 @@ const Category = ({ onBackToItems }) => {
                   setEditingCategory(null);
                   setFormData({ name: '', description: '', status: 'active' });
                 }}
-                className="bg-gray-500 text-white px-4 py-2 rounded-lg"
+                className="px-4 py-2 rounded-lg bg-gray-600 text-white hover:bg-gray-700 transition-colors"
               >
                 Cancel
               </button>
@@ -174,35 +176,42 @@ const Category = ({ onBackToItems }) => {
       )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 animate-fadeInUp animate-delay-300">
-        {categories.map((category, index) => (
-          <div key={category._id} className="bg-white p-4 rounded-lg shadow-md animate-scaleIn" style={{animationDelay: `${Math.min(index * 100 + 400, 800)}ms`}}>
-            <div className="flex justify-between items-start mb-2">
-              <h3 className="font-semibold text-lg">{category.name}</h3>
-              <span className={`px-2 py-1 rounded text-sm ${
-                category.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-              }`}>
-                {category.status}
-              </span>
-            </div>
-            <p className="text-gray-600 text-sm mb-3">{category.description}</p>
-            <div className="flex space-x-2">
-              <button
-                onClick={() => handleEdit(category)}
-                className="bg-yellow-500 text-white px-3 py-1 rounded text-sm"
-              >
-                Edit
-              </button>
-              {hasRole('ADMIN') && (
-                <button
-                  onClick={() => handleDelete(category._id)}
-                  className="bg-red-500 text-white px-3 py-1 rounded text-sm"
-                >
-                  Delete
-                </button>
-              )}
-            </div>
+        {categories.length === 0 ? (
+          <div className="col-span-full text-center py-8">
+            <p className="text-gray-400">No categories found. Add some categories to get started.</p>
           </div>
-        ))}
+        ) : (
+          categories.map((category, index) => (
+            <div key={category._id} className="p-4 rounded-lg shadow-lg hover:shadow-xl transition-shadow animate-scaleIn" style={{ backgroundColor: '#374151', animationDelay: `${Math.min(index * 100 + 400, 800)}ms`}}>
+              <div className="flex justify-between items-start mb-2">
+                <h3 className="font-semibold text-lg text-white">{category.name}</h3>
+                <span className={`px-2 py-1 rounded text-sm ${
+                  category.status === 'active' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
+                }`}>
+                  {category.status}
+                </span>
+              </div>
+              <p className="text-gray-300 text-sm mb-3">{category.description}</p>
+              <div className="flex space-x-2">
+                <button
+                  onClick={() => handleEdit(category)}
+                  className="flex items-center gap-2 px-3 py-2 rounded text-sm flex-1 transition-colors hover:opacity-90"
+                  style={{ backgroundColor: '#c2ab65', color: '#1f2937' }}
+                >
+                  <FiEdit2 /> Edit
+                </button>
+                {hasRole('ADMIN') && (
+                  <button
+                    onClick={() => handleDelete(category._id)}
+                    className="flex items-center gap-2 px-3 py-2 rounded text-sm flex-1 bg-red-600 text-white hover:bg-red-700 transition-colors"
+                  >
+                    <FiTrash2 /> Delete
+                  </button>
+                )}
+              </div>
+            </div>
+          ))
+        )}
       </div>
     </div>
   );

@@ -102,11 +102,35 @@ export const useKOTManagement = () => {
   const fetchKOTs = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('/api/restaurant-orders/all', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
       
-      const consolidatedOrders = response.data.map(order => {
+      // Fetch both restaurant orders and in-room orders
+      const [restaurantResponse, inRoomResponse] = await Promise.all([
+        axios.get('/api/restaurant-orders/all', {
+          headers: { Authorization: `Bearer ${token}` }
+        }),
+        axios.get('/api/inroom-orders/all', {
+          headers: { Authorization: `Bearer ${token}` }
+        }).catch(err => {
+          console.log('In-room orders fetch failed:', err);
+          return { data: [] };
+        })
+      ]);
+      
+      const restaurantOrders = restaurantResponse.data || [];
+      const inRoomOrdersData = inRoomResponse.data || [];
+      const inRoomOrders = (Array.isArray(inRoomOrdersData) ? inRoomOrdersData : []).map(order => ({
+        ...order,
+        isInRoomOrder: true,
+        items: order.items || [],
+        allKotItems: order.items || []
+      }));
+      
+      console.log('Restaurant orders:', restaurantOrders.length);
+      console.log('In-room orders:', inRoomOrders.length);
+      
+      const allOrders = [...restaurantOrders, ...inRoomOrders];
+      
+      const consolidatedOrders = allOrders.map(order => {
         const allItems = (order.allKotItems || order.items || []).map(item => {
           if (typeof item === 'string') {
             return { name: item, quantity: 1, kotNumber: 1 };
