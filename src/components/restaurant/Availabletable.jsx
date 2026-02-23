@@ -187,9 +187,7 @@ const AvailableTable = () => {
                     <td className="px-3 sm:px-6 py-4">
                       <div className="flex flex-wrap gap-1">
                         <button onClick={() => openEditModal(table)} className="bg-blue-500 text-white px-2 py-1 rounded text-xs hover:bg-blue-600">Edit</button>
-                        {userRole === 'ADMIN' && (
-                          <button onClick={() => deleteTable(table._id)} className="bg-red-500 text-white px-2 py-1 rounded text-xs hover:bg-red-600">Delete</button>
-                        )}
+                        <button onClick={() => deleteTable(table._id)} className="bg-red-500 text-white px-2 py-1 rounded text-xs hover:bg-red-600">Delete</button>
                       </div>
                     </td>
                   </tr>
