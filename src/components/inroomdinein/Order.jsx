@@ -39,6 +39,9 @@ const Order = () => {
   const [selectedCategory, setSelectedCategory] = useState('');
   const [nonChargeable, setNonChargeable] = useState(false);
   const [isMenuLoading, setIsMenuLoading] = useState(true);
+  const [selectedItem, setSelectedItem] = useState(null);
+  const [selectedVariation, setSelectedVariation] = useState(null);
+  const [selectedAddons, setSelectedAddons] = useState([]);
   
   const {
     menuItems,
@@ -232,18 +235,30 @@ const Order = () => {
             <div className="text-gray-500">No menu items found</div>
           </div>
         ) : (
-          categoryFilteredMenu.map((item, index) => (
+          categoryFilteredMenu.map((item, index) => {
+            let displayPrice = item.Price || 0;
+            if (item.variations && item.variations.length > 0) {
+              const validPrices = item.variations.filter(v => v.price > 0).map(v => v.price);
+              if (validPrices.length > 0) {
+                displayPrice = Math.min(...validPrices);
+              }
+            }
+            return (
           <div key={item._id} className="bg-white/90 backdrop-blur-sm p-6 rounded-2xl shadow-xl border-2 border-[#c3ad6b]/30 hover:border-[#c3ad6b] hover:shadow-2xl transition-all duration-300 transform hover:scale-105 animate-scaleIn" style={{animationDelay: `${Math.min(index * 50 + 400, 800)}ms`}}>
             <h3 className="text-xl font-bold truncate text-[#b39b5a] mb-2">{item.name}</h3>
-            <p className="text-sm mb-4 text-[#c3ad6b] font-medium">{item.foodType}</p>
-            <p className="mb-4 font-bold text-lg text-gray-800">₹{(item.Price || 0).toFixed(2)}</p>
+            <p className="text-sm mb-2 text-[#c3ad6b] font-medium">{item.foodType}</p>
+            {item.description && <p className="text-xs text-gray-600 mb-3 line-clamp-2">{item.description}</p>}
+            <p className="mb-4 font-bold text-lg text-gray-800">₹{displayPrice.toFixed(2)}</p>
 
             {cartItems.some(i => i._id === item._id) ? (
               <div className="flex flex-col sm:flex-row items-center justify-between space-y-2 sm:space-y-0">
                 <div className="flex items-center space-x-2">
                   <button
                     className="bg-border text-text w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center hover:bg-secondary transition-colors text-sm sm:text-base"
-                    onClick={() => handleQuantityChange(item._id, -1)}
+                    onClick={() => {
+                      const cartItem = cartItems.find(i => i._id === item._id);
+                      if (cartItem) handleQuantityChange(cartItem.cartKey, -1);
+                    }}
                   >
                     -
                   </button>
@@ -252,14 +267,20 @@ const Order = () => {
                   </span>
                   <button
                     className="bg-primary text-background w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center hover:bg-hover transition-colors text-sm sm:text-base"
-                    onClick={() => handleQuantityChange(item._id, 1)}
+                    onClick={() => {
+                      const cartItem = cartItems.find(i => i._id === item._id);
+                      if (cartItem) handleQuantityChange(cartItem.cartKey, 1);
+                    }}
                   >
                     +
                   </button>
                 </div>
                 <button
                   className="text-primary hover:text-hover transition-colors duration-200 text-xs sm:text-sm px-2 py-1 rounded"
-                  onClick={() => handleRemoveItem(item._id)}
+                  onClick={() => {
+                    const cartItem = cartItems.find(i => i._id === item._id);
+                    if (cartItem) handleRemoveItem(item._id, cartItem.cartKey);
+                  }}
                 >
                   Remove
                 </button>
@@ -267,14 +288,35 @@ const Order = () => {
             ) : (
               <button
                 className="w-full bg-gradient-to-r from-[#c3ad6b] to-[#b39b5a] text-white py-3 rounded-xl font-bold hover:from-[#b39b5a] hover:to-[#c3ad6b] transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
-                onClick={() => handleAddToCart(item)}
+                onClick={() => {
+                  const hasMultipleVariations = item.variations?.length > 1;
+                  const hasAddons = item.addons?.length > 0;
+                  
+                  if (hasMultipleVariations || hasAddons) {
+                    setSelectedItem(item);
+                    setSelectedVariation(item.variations?.[0] || null);
+                    setSelectedAddons([]);
+                  } else if (item.variations?.length === 1) {
+                    // Auto-add with single variation
+                    const itemToAdd = {
+                      ...item,
+                      selectedVariation: item.variations[0],
+                      selectedAddons: [],
+                      Price: Number(item.variations[0].price || 0)
+                    };
+                    handleAddToCart(itemToAdd);
+                  } else {
+                    handleAddToCart(item);
+                  }
+                }}
               >
                 Add to Order
               </button>
             )}
           </div>
+        );}
         ))
-        )}
+        }
       </div>
 
       {/* Floating Cart Button */}
@@ -295,6 +337,104 @@ const Order = () => {
           )}
         </div>
       </div>
+
+      {/* Variation/Addon Selection Modal */}
+      {selectedItem && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md max-h-[80vh] flex flex-col">
+            <div className="p-4 border-b">
+              <div className="flex justify-between items-center">
+                <h2 className="text-xl font-bold text-gray-800">{selectedItem.name}</h2>
+                <button
+                  className="text-gray-500 hover:text-gray-700 transition-colors duration-200"
+                  onClick={() => {
+                    setSelectedItem(null);
+                    setSelectedVariation(null);
+                    setSelectedAddons([]);
+                  }}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              {selectedItem.variations?.length > 0 && (
+                <div>
+                  <h3 className="font-semibold text-gray-800 mb-2">Select Variation</h3>
+                  <div className="space-y-2">
+                    {selectedItem.variations.map(variation => (
+                      <label key={variation._id} className="flex items-center justify-between p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
+                        <div className="flex items-center gap-3">
+                          <input
+                            type="radio"
+                            name="variation"
+                            checked={selectedVariation?._id === variation._id}
+                            onChange={() => setSelectedVariation(variation)}
+                            className="h-4 w-4 text-[#c3ad6b] focus:ring-[#c3ad6b]"
+                          />
+                          <span className="text-gray-800">{variation.name}</span>
+                        </div>
+                        <span className="font-semibold text-gray-800">₹{Number(variation.price || 0).toFixed(2)}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {selectedItem.addons?.length > 0 && (
+                <div>
+                  <h3 className="font-semibold text-gray-800 mb-2">Add-ons (Optional)</h3>
+                  <div className="space-y-2">
+                    {selectedItem.addons.map(addon => (
+                      <label key={addon._id} className="flex items-center justify-between p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
+                        <div className="flex items-center gap-3">
+                          <input
+                            type="checkbox"
+                            checked={selectedAddons.some(a => a._id === addon._id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedAddons([...selectedAddons, addon]);
+                              } else {
+                                setSelectedAddons(selectedAddons.filter(a => a._id !== addon._id));
+                              }
+                            }}
+                            className="h-4 w-4 text-[#c3ad6b] focus:ring-[#c3ad6b] rounded"
+                          />
+                          <span className="text-gray-800">{addon.name}</span>
+                        </div>
+                        <span className="font-semibold text-gray-800">₹{Number(addon.price || 0).toFixed(2)}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="border-t p-4">
+              <button
+                className="w-full py-3 px-4 rounded-md text-white bg-gradient-to-r from-[#c3ad6b] to-[#b39b5a] font-semibold hover:from-[#b39b5a] hover:to-[#c3ad6b] transition-all duration-200"
+                onClick={() => {
+                  const itemToAdd = {
+                    ...selectedItem,
+                    selectedVariation,
+                    selectedAddons,
+                    Price: Number(selectedVariation?.price || selectedItem.Price || 0) + selectedAddons.reduce((sum, addon) => sum + Number(addon.price || 0), 0)
+                  };
+                  handleAddToCart(itemToAdd);
+                  setSelectedItem(null);
+                  setSelectedVariation(null);
+                  setSelectedAddons([]);
+                }}
+              >
+                Add to Cart - ₹{(Number(selectedVariation?.price || selectedItem.Price || 0) + selectedAddons.reduce((sum, addon) => sum + Number(addon.price || 0), 0)).toFixed(2)}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Cart Popup Modal */}
       {isCartOpen && (
@@ -339,8 +479,16 @@ const Order = () => {
                           <td className="py-3">
                             <div>
                               <div className="font-medium text-gray-800">{item.name}</div>
+                              {item.selectedVariation && (
+                                <div className="text-xs text-gray-600">• {item.selectedVariation.name}</div>
+                              )}
+                              {item.selectedAddons?.length > 0 && (
+                                <div className="text-xs text-gray-600">
+                                  {item.selectedAddons.map(addon => `+ ${addon.name}`).join(', ')}
+                                </div>
+                              )}
                               <div className="text-xs text-gray-500">{categories.find(cat => cat._id === item.category)?.name || item.foodType}</div>
-                              <div className="text-xs text-[#c3ad6b]">₹{(item.Price || item.price || 0).toFixed(2)} each</div>
+                              <div className="text-xs font-semibold text-[#c3ad6b]">₹{(item.Price || item.price || 0).toFixed(2)} each</div>
                               {hasRole(['ADMIN', 'GM', 'FRONT DESK', 'STAFF']) && (
                                 <label className="flex items-center gap-1 mt-1">
                                   <input
@@ -365,14 +513,14 @@ const Order = () => {
                             <div className="flex items-center justify-center space-x-1">
                               <button
                                 className="bg-gray-200 text-gray-700 w-6 h-6 rounded-full flex items-center justify-center hover:bg-gray-300 transition-colors text-xs"
-                                onClick={() => handleQuantityChange(item._id, -1)}
+                                onClick={() => handleQuantityChange(item.cartKey, -1)}
                               >
                                 -
                               </button>
                               <span className="font-bold text-gray-800 w-6 text-center">{item.quantity}</span>
                               <button
                                 className="bg-[#c3ad6b] text-white w-6 h-6 rounded-full flex items-center justify-center hover:bg-[#b39b5a] transition-colors text-xs"
-                                onClick={() => handleQuantityChange(item._id, 1)}
+                                onClick={() => handleQuantityChange(item.cartKey, 1)}
                               >
                                 +
                               </button>
@@ -384,7 +532,7 @@ const Order = () => {
                           <td className="py-3 text-center">
                             <button
                               className="text-red-500 hover:text-red-700 text-lg font-bold"
-                              onClick={() => handleRemoveItem(item._id)}
+                              onClick={() => handleRemoveItem(item._id, item.cartKey)}
                             >
                               ×
                             </button>

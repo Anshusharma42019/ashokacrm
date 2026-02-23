@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useAppContext } from "../../context/AppContext";
 import Pagination from "../common/Pagination";
+import { FiPlus, FiEdit2, FiTrash2, FiClock, FiTag } from 'react-icons/fi';
 
 const Menu = () => {
   const { axios } = useAppContext();
@@ -11,7 +12,6 @@ const Menu = () => {
     name: '',
     Price: 0,
     category: '',
-    Discount: 0,
     status: 'available',
     in_oostock: true,
     image: '',
@@ -48,7 +48,7 @@ const Menu = () => {
       fetchMenuItems();
       setShowForm(false);
       setEditingItem(null);
-      setFormData({ name: '', Price: 0, category: '', Discount: 0, status: 'available', in_oostock: true, image: '', description: '', timeToPrepare: 0 });
+      setFormData({ name: '', Price: 0, category: '', status: 'available', in_oostock: true, image: '', description: '', timeToPrepare: 0 });
     } catch (error) {
       console.error('Error saving menu item:', error);
     }
@@ -73,115 +73,94 @@ const Menu = () => {
   };
 
   return (
-    <div className="p-4 sm:p-6" style={{ backgroundColor: 'hsl(45, 100%, 95%)', color: 'hsl(45, 100%, 20%)' }}>
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
-        <h2 className="text-xl sm:text-2xl font-semibold" style={{ color: 'hsl(45, 100%, 20%)' }}>Menu Items</h2>
+    <div className="p-4 sm:p-6 min-h-screen" style={{ backgroundColor: '#1f2937' }}>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+        <h2 className="text-xl sm:text-2xl font-semibold text-white">Menu Items</h2>
         <button
           onClick={() => setShowForm(true)}
-          className="px-4 py-2 rounded-lg w-full sm:w-auto"
-          style={{ backgroundColor: 'hsl(45, 43%, 58%)', color: 'hsl(45, 100%, 20%)' }}
-          onMouseEnter={(e) => e.target.style.backgroundColor = 'hsl(45, 32%, 46%)'}
-          onMouseLeave={(e) => e.target.style.backgroundColor = 'hsl(45, 43%, 58%)'}
+          className="flex items-center gap-2 px-4 py-2 rounded-lg w-full sm:w-auto transition-colors hover:opacity-90"
+          style={{ backgroundColor: '#c2ab65', color: '#1f2937' }}
         >
-          Add Item
+          <FiPlus /> Add Item
         </button>
       </div>
 
       {showForm && (
-        <div className="p-4 sm:p-6 rounded-lg shadow-md mb-6" style={{ backgroundColor: 'white', border: '1px solid hsl(45, 100%, 85%)' }}>
-          <h3 className="text-lg font-semibold mb-4" style={{ color: 'hsl(45, 100%, 20%)' }}>{editingItem ? 'Edit' : 'Add'} Menu Item</h3>
+        <div className="p-4 sm:p-6 rounded-lg shadow-xl mb-6" style={{ backgroundColor: '#374151', border: '1px solid #4b5563' }}>
+          <h3 className="text-lg font-semibold mb-4 text-white">{editingItem ? 'Edit' : 'Add'} Menu Item</h3>
           <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium mb-1" style={{ color: 'hsl(45, 100%, 20%)' }}>Item Name *</label>
+              <label className="block text-sm font-medium mb-1 text-gray-300">Item Name *</label>
               <input
                 type="text"
                 placeholder="Enter item name"
                 value={formData.name}
                 onChange={(e) => setFormData({...formData, name: e.target.value})}
-                className="w-full rounded-lg px-3 py-2"
-                style={{ border: '1px solid hsl(45, 100%, 85%)', backgroundColor: 'white', color: 'hsl(45, 100%, 20%)' }}
+                className="w-full rounded-lg px-3 py-2 bg-gray-700 text-white border border-gray-600 focus:border-[#c2ab65] focus:outline-none"
                 required
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1" style={{ color: 'hsl(45, 100%, 20%)' }}>Price *</label>
+              <label className="block text-sm font-medium mb-1 text-gray-300">Price *</label>
               <input
                 type="number"
                 placeholder="Enter price"
                 value={formData.Price}
                 onChange={(e) => setFormData({...formData, Price: Math.max(0, Number(e.target.value))})}
-                className="w-full rounded-lg px-3 py-2"
-                style={{ border: '1px solid hsl(45, 100%, 85%)', backgroundColor: 'white', color: 'hsl(45, 100%, 20%)' }}
+                className="w-full rounded-lg px-3 py-2 bg-gray-700 text-white border border-gray-600 focus:border-[#c2ab65] focus:outline-none"
                 min="0"
                 step="0.01"
                 required
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1" style={{ color: 'hsl(45, 100%, 20%)' }}>Category *</label>
+              <label className="block text-sm font-medium mb-1 text-gray-300">Category *</label>
               <input
                 type="text"
                 placeholder="Enter category"
                 value={formData.category}
                 onChange={(e) => setFormData({...formData, category: e.target.value})}
-                className="w-full rounded-lg px-3 py-2"
-                style={{ border: '1px solid hsl(45, 100%, 85%)', backgroundColor: 'white', color: 'hsl(45, 100%, 20%)' }}
+                className="w-full rounded-lg px-3 py-2 bg-gray-700 text-white border border-gray-600 focus:border-[#c2ab65] focus:outline-none"
                 required
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1" style={{ color: 'hsl(45, 100%, 20%)' }}>Discount</label>
-              <input
-                type="number"
-                placeholder="Enter discount amount"
-                value={formData.Discount}
-                onChange={(e) => setFormData({...formData, Discount: Math.max(0, Number(e.target.value))})}
-                className="w-full rounded-lg px-3 py-2"
-                style={{ border: '1px solid hsl(45, 100%, 85%)', backgroundColor: 'white', color: 'hsl(45, 100%, 20%)' }}
-                min="0"
-                step="0.01"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1" style={{ color: 'hsl(45, 100%, 20%)' }}>Status</label>
+              <label className="block text-sm font-medium mb-1 text-gray-300">Status</label>
               <select
                 value={formData.status}
                 onChange={(e) => setFormData({...formData, status: e.target.value})}
-                className="w-full rounded-lg px-3 py-2"
-                style={{ border: '1px solid hsl(45, 100%, 85%)', backgroundColor: 'white', color: 'hsl(45, 100%, 20%)' }}
+                className="w-full rounded-lg px-3 py-2 bg-gray-700 text-white border border-gray-600 focus:border-[#c2ab65] focus:outline-none"
               >
                 <option value="available">Available</option>
                 <option value="unavailable">Unavailable</option>
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1" style={{ color: 'hsl(45, 100%, 20%)' }}>Time to Prepare (minutes)</label>
+              <label className="block text-sm font-medium mb-1 text-gray-300">Time to Prepare (minutes)</label>
               <input
                 type="number"
                 placeholder="Enter preparation time"
                 value={formData.timeToPrepare}
                 onChange={(e) => setFormData({...formData, timeToPrepare: Number(e.target.value)})}
-                className="w-full rounded-lg px-3 py-2"
-                style={{ border: '1px solid hsl(45, 100%, 85%)', backgroundColor: 'white', color: 'hsl(45, 100%, 20%)' }}
+                className="w-full rounded-lg px-3 py-2 bg-gray-700 text-white border border-gray-600 focus:border-[#c2ab65] focus:outline-none"
                 min="0"
               />
             </div>
             <div className="col-span-2">
-              <label className="block text-sm font-medium mb-1" style={{ color: 'hsl(45, 100%, 20%)' }}>Description</label>
+              <label className="block text-sm font-medium mb-1 text-gray-300">Description</label>
               <textarea
                 placeholder="Enter item description"
                 value={formData.description}
                 onChange={(e) => setFormData({...formData, description: e.target.value})}
-                className="w-full rounded-lg px-3 py-2"
-                style={{ border: '1px solid hsl(45, 100%, 85%)', backgroundColor: 'white', color: 'hsl(45, 100%, 20%)' }}
+                className="w-full rounded-lg px-3 py-2 bg-gray-700 text-white border border-gray-600 focus:border-[#c2ab65] focus:outline-none"
                 rows="3"
               />
             </div>
             <div className="col-span-2 flex space-x-2">
               <button 
                 type="submit" 
-                className="px-4 py-2 rounded-lg"
-                style={{ backgroundColor: 'hsl(45, 71%, 69%)', color: 'hsl(45, 100%, 20%)' }}
+                className="px-4 py-2 rounded-lg transition-colors hover:opacity-90"
+                style={{ backgroundColor: '#c2ab65', color: '#1f2937' }}
               >
                 {editingItem ? 'Update' : 'Add'}
               </button>
@@ -190,10 +169,9 @@ const Menu = () => {
                 onClick={() => {
                   setShowForm(false);
                   setEditingItem(null);
-                  setFormData({ name: '', Price: 0, category: '', Discount: 0, status: 'available', in_oostock: true, image: '', description: '', timeToPrepare: 0 });
+                  setFormData({ name: '', Price: 0, category: '', status: 'available', in_oostock: true, image: '', description: '', timeToPrepare: 0 });
                 }}
-                className="px-4 py-2 rounded-lg"
-                style={{ backgroundColor: 'hsl(45, 32%, 46%)', color: 'white' }}
+                className="px-4 py-2 rounded-lg bg-gray-600 text-white hover:bg-gray-700 transition-colors"
               >
                 Cancel
               </button>
@@ -204,20 +182,24 @@ const Menu = () => {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {menuItems.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((item) => (
-          <div key={item._id} className="p-4 rounded-lg shadow-md" style={{ backgroundColor: 'white', border: '1px solid hsl(45, 100%, 85%)' }}>
-            <h3 className="font-semibold text-lg" style={{ color: 'hsl(45, 100%, 20%)' }}>{item.name}</h3>
-            <p className="text-sm mb-2" style={{ color: 'hsl(45, 100%, 30%)' }}>{item.description}</p>
-            <p className="font-semibold" style={{ color: 'hsl(45, 43%, 58%)' }}>₹{item.Price}</p>
-            {item.Discount > 0 && <p className="text-sm" style={{ color: 'hsl(120, 60%, 50%)' }}>Discount: ₹{item.Discount}</p>}
-            <p className="text-sm" style={{ color: 'hsl(45, 100%, 40%)' }}>Category: {item.category}</p>
-            {item.timeToPrepare > 0 && <p className="text-sm" style={{ color: 'hsl(45, 100%, 40%)' }}>Prep Time: {item.timeToPrepare} min</p>}
-            <div className="flex justify-between items-center text-sm mb-2">
-              <span className={`${item.in_oostock ? 'text-green-600' : 'text-red-600'}`}>
+          <div key={item._id} className="p-4 rounded-lg shadow-lg hover:shadow-xl transition-shadow" style={{ backgroundColor: '#374151', border: '1px solid #4b5563' }}>
+            <h3 className="font-semibold text-lg text-white mb-2">{item.name}</h3>
+            {item.description && <p className="text-sm mb-3 text-gray-300">{item.description}</p>}
+            <p className="font-bold text-xl mb-3" style={{ color: '#c2ab65' }}>₹{item.Price}</p>
+            <div className="flex items-center gap-2 mb-2">
+              <FiTag className="text-gray-400" />
+              <p className="text-sm text-gray-300">{item.category}</p>
+            </div>
+            {item.timeToPrepare > 0 && (
+              <div className="flex items-center gap-2 mb-3">
+                <FiClock className="text-gray-400" />
+                <p className="text-sm text-gray-300">{item.timeToPrepare} min</p>
+              </div>
+            )}
+            <div className="flex justify-between items-center mb-3 pb-3 border-b border-gray-600">
+              <span className={`text-sm font-medium ${item.in_oostock ? 'text-green-400' : 'text-red-400'}`}>
                 {item.in_oostock ? 'In Stock' : 'Out of Stock'}
               </span>
-            </div>
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-sm font-medium" style={{ color: 'hsl(45, 100%, 40%)' }}>Active:</span>
               <label className="relative inline-flex items-center cursor-pointer">
                 <input
                   type="checkbox"
@@ -239,7 +221,7 @@ const Menu = () => {
                   className="sr-only"
                 />
                 <div className={`w-11 h-6 rounded-full transition-colors ${
-                  item.status === 'available' ? 'bg-green-500' : 'bg-gray-300'
+                  item.status === 'available' ? 'bg-[#c2ab65]' : 'bg-gray-600'
                 }`}>
                   <div className={`w-5 h-5 bg-white rounded-full shadow-md transform transition-transform ${
                     item.status === 'available' ? 'translate-x-5' : 'translate-x-0.5'
@@ -247,20 +229,19 @@ const Menu = () => {
                 </div>
               </label>
             </div>
-            <div className="flex flex-col sm:flex-row gap-2 mt-2">
+            <div className="flex flex-col sm:flex-row gap-2">
               <button
                 onClick={() => handleEdit(item)}
-                className="px-3 py-1 rounded text-sm flex-1"
-                style={{ backgroundColor: 'hsl(45, 100%, 80%)', color: 'hsl(45, 100%, 20%)' }}
+                className="flex items-center justify-center gap-2 px-3 py-2 rounded text-sm flex-1 transition-colors hover:opacity-90"
+                style={{ backgroundColor: '#c2ab65', color: '#1f2937' }}
               >
-                Edit
+                <FiEdit2 /> Edit
               </button>
               <button
                 onClick={() => handleDelete(item._id)}
-                className="px-3 py-1 rounded text-sm flex-1"
-                style={{ backgroundColor: 'hsl(0, 70%, 60%)', color: 'white' }}
+                className="flex items-center justify-center gap-2 px-3 py-2 rounded text-sm flex-1 bg-red-600 text-white hover:bg-red-700 transition-colors"
               >
-                Delete
+                <FiTrash2 /> Delete
               </button>
             </div>
           </div>

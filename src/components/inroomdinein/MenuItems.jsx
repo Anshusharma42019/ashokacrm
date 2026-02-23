@@ -50,7 +50,6 @@ const MenuItems = () => {
     name: '',
     Price: 0,
     category: '',
-    Discount: 0,
     foodType: 'Veg',
     isActive: true,
     image: '',
@@ -133,7 +132,7 @@ const MenuItems = () => {
       fetchMenuItems();
       setShowForm(false);
       setEditingItem(null);
-      setFormData({ name: '', Price: 0, category: '', Discount: 0, foodType: 'Veg', isActive: true, image: '', description: '', timeToPrepare: 0, variations: [], addons: [] });
+      setFormData({ name: '', Price: 0, category: '', foodType: 'Veg', isActive: true, image: '', description: '', timeToPrepare: 0, variations: [], addons: [] });
     } catch (error) {
       console.error('Error saving menu item:', error);
     }
@@ -188,44 +187,40 @@ const MenuItems = () => {
     <div className="p-4 sm:p-6" style={{ backgroundColor: 'hsl(45, 100%, 95%)', color: 'hsl(45, 100%, 20%)' }}>
       {/* Tab Navigation */}
       <div className="mb-6 animate-slideInLeft animate-delay-100">
-        <div className="flex space-x-1 bg-gray-200 p-1 rounded-lg w-fit">
+        <div className="flex flex-wrap gap-2">
           <button
             onClick={() => setActiveTab('items')}
-            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-              activeTab === 'items'
-                ? 'bg-white text-blue-600 shadow-sm'
-                : 'text-gray-600 hover:text-gray-800'
+            className={`px-6 py-3 rounded-lg text-sm font-medium transition-all shadow-md ${
+              activeTab === 'items' ? 'transform scale-105' : 'hover:scale-105'
             }`}
+            style={activeTab === 'items' ? { backgroundColor: '#c2ab65', color: '#1f2937' } : { backgroundColor: '#374151', color: '#d1d5db' }}
           >
             Menu Items
           </button>
           <button
             onClick={() => setActiveTab('categories')}
-            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-              activeTab === 'categories'
-                ? 'bg-white text-blue-600 shadow-sm'
-                : 'text-gray-600 hover:text-gray-800'
+            className={`px-6 py-3 rounded-lg text-sm font-medium transition-all shadow-md ${
+              activeTab === 'categories' ? 'transform scale-105' : 'hover:scale-105'
             }`}
+            style={activeTab === 'categories' ? { backgroundColor: '#c2ab65', color: '#1f2937' } : { backgroundColor: '#374151', color: '#d1d5db' }}
           >
             Categories
           </button>
           <button
             onClick={() => setActiveTab('variations')}
-            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-              activeTab === 'variations'
-                ? 'bg-white text-blue-600 shadow-sm'
-                : 'text-gray-600 hover:text-gray-800'
+            className={`px-6 py-3 rounded-lg text-sm font-medium transition-all shadow-md ${
+              activeTab === 'variations' ? 'transform scale-105' : 'hover:scale-105'
             }`}
+            style={activeTab === 'variations' ? { backgroundColor: '#c2ab65', color: '#1f2937' } : { backgroundColor: '#374151', color: '#d1d5db' }}
           >
             Variations
           </button>
           <button
             onClick={() => setActiveTab('addons')}
-            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-              activeTab === 'addons'
-                ? 'bg-white text-blue-600 shadow-sm'
-                : 'text-gray-600 hover:text-gray-800'
+            className={`px-6 py-3 rounded-lg text-sm font-medium transition-all shadow-md ${
+              activeTab === 'addons' ? 'transform scale-105' : 'hover:scale-105'
             }`}
+            style={activeTab === 'addons' ? { backgroundColor: '#c2ab65', color: '#1f2937' } : { backgroundColor: '#374151', color: '#d1d5db' }}
           >
             Addons
           </button>
@@ -273,19 +268,6 @@ const MenuItems = () => {
                 min="0"
                 step="0.01"
                 required
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1" style={{ color: 'hsl(45, 100%, 20%)' }}>Discount</label>
-              <input
-                type="number"
-                placeholder="Enter discount amount"
-                value={formData.Discount}
-                onChange={(e) => setFormData({...formData, Discount: Math.max(0, Number(e.target.value))})}
-                className="w-full rounded-lg px-3 py-2"
-                style={{ border: '1px solid hsl(45, 100%, 85%)', backgroundColor: 'white', color: 'hsl(45, 100%, 20%)' }}
-                min="0"
-                step="0.01"
               />
             </div>
             <div>
@@ -408,7 +390,7 @@ const MenuItems = () => {
                 onClick={() => {
                   setShowForm(false);
                   setEditingItem(null);
-                  setFormData({ name: '', Price: 0, category: '', Discount: 0, foodType: 'Veg', isActive: true, image: '', description: '', timeToPrepare: 0, variations: [], addons: [] });
+                  setFormData({ name: '', Price: 0, category: '', foodType: 'Veg', isActive: true, image: '', description: '', timeToPrepare: 0, variations: [], addons: [] });
                 }}
                 className="px-4 py-2 rounded-lg"
                 style={{ backgroundColor: 'hsl(45, 32%, 46%)', color: 'white' }}
@@ -432,7 +414,6 @@ const MenuItems = () => {
             <p className="text-sm" style={{ color: 'hsl(45, 100%, 40%)' }}>Food Type: {item.foodType}</p>
             <p className="text-sm mb-2" style={{ color: 'hsl(45, 100%, 30%)' }}>{item.description}</p>
             <p className="font-semibold" style={{ color: 'hsl(45, 43%, 58%)' }}>₹{item.Price}</p>
-            {item.Discount > 0 && <p className="text-sm" style={{ color: 'hsl(120, 60%, 50%)' }}>Discount: ₹{item.Discount}</p>}
             <p className="text-sm" style={{ color: 'hsl(45, 100%, 40%)' }}>Category: {categories.find(cat => cat._id === item.category)?.name || 'N/A'}</p>
             {item.timeToPrepare > 0 && <p className="text-sm" style={{ color: 'hsl(45, 100%, 40%)' }}>Prep Time: {item.timeToPrepare} min</p>}
             <div className="flex justify-between items-center mb-2">

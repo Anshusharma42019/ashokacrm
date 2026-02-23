@@ -102,6 +102,32 @@ export const useOrderManagement = (location) => {
 
   const fetchData = async () => {
     try {
+      // Fetch variations and addons first
+      let variationsMap = {};
+      let addonsMap = {};
+      
+      try {
+        const token = localStorage.getItem('token');
+        const variationsRes = await axios.get('/api/variations/all/variation', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const variationsData = variationsRes.data || [];
+        variationsMap = variationsData.reduce((acc, v) => ({ ...acc, [v._id]: v }), {});
+      } catch (error) {
+        console.error('Error fetching variations:', error);
+      }
+      
+      try {
+        const token = localStorage.getItem('token');
+        const addonsRes = await axios.get('/api/addons/all/addon', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const addonsData = addonsRes.data || [];
+        addonsMap = addonsData.reduce((acc, a) => ({ ...acc, [a._id]: a }), {});
+      } catch (error) {
+        console.error('Error fetching addons:', error);
+      }
+      
       // Fetch items
       try {
         const token = localStorage.getItem('token');
@@ -109,7 +135,15 @@ export const useOrderManagement = (location) => {
           headers: { Authorization: `Bearer ${token}` }
         });
         const itemsData = itemsRes.data.data || itemsRes.data || [];
-        setMenuItems(Array.isArray(itemsData) ? itemsData : []);
+        
+        // Populate variations and addons
+        const populatedItems = itemsData.map(item => ({
+          ...item,
+          variations: (item.variations || []).map(vId => variationsMap[vId] || vId).filter(v => v && typeof v === 'object'),
+          addons: (item.addons || []).map(aId => addonsMap[aId] || aId).filter(a => a && typeof a === 'object')
+        }));
+        
+        setMenuItems(Array.isArray(populatedItems) ? populatedItems : []);
       } catch (error) {
         console.error('Error fetching items:', error);
         setMenuItems([]);
@@ -193,25 +227,35 @@ export const useOrderManagement = (location) => {
 
   const handleAddToCart = (item) => {
     setCartItems(prevItems => {
-      const existingItem = prevItems.find(i => i._id === item._id);
+      const itemKey = `${item._id}_${item.selectedVariation?._id || 'base'}_${item.selectedAddons?.map(a => a._id).join('_') || 'none'}`;
+      const existingItem = prevItems.find(i => 
+        i._id === item._id && 
+        i.selectedVariation?._id === item.selectedVariation?._id &&
+        JSON.stringify(i.selectedAddons?.map(a => a._id).sort()) === JSON.stringify(item.selectedAddons?.map(a => a._id).sort())
+      );
+      
       if (existingItem) {
         return prevItems.map(i =>
-          i._id === item._id ? { ...i, quantity: i.quantity + 1 } : i
+          i._id === item._id && 
+          i.selectedVariation?._id === item.selectedVariation?._id &&
+          JSON.stringify(i.selectedAddons?.map(a => a._id).sort()) === JSON.stringify(item.selectedAddons?.map(a => a._id).sort())
+            ? { ...i, quantity: i.quantity + 1 }
+            : i
         );
       } else {
-        return [...prevItems, { ...item, quantity: 1, note: '' }];
+        return [...prevItems, { ...item, quantity: 1, note: '', cartKey: itemKey }];
       }
     });
   };
 
-  const handleRemoveItem = (itemId) => {
-    setCartItems(prevItems => prevItems.filter(item => item._id !== itemId));
+  const handleRemoveItem = (itemId, cartKey) => {
+    setCartItems(prevItems => prevItems.filter(item => item.cartKey !== cartKey));
   };
 
-  const handleQuantityChange = (itemId, change) => {
+  const handleQuantityChange = (cartKey, change) => {
     setCartItems(prevItems =>
       prevItems.map(item =>
-        item._id === itemId ? { ...item, quantity: Math.max(1, item.quantity + change) } : item
+        item.cartKey === cartKey ? { ...item, quantity: Math.max(1, item.quantity + change) } : item
       )
     );
   };
@@ -266,10 +310,21 @@ export const useOrderManagement = (location) => {
       const orderItems = cartItems.map(item => ({
         itemId: item._id,
         itemName: item.name,
+        name: item.name,
         price: item.Price || 0,
         quantity: item.quantity,
         note: item.note || '',
-        isFree: item.isFree || false
+        isFree: item.isFree || false,
+        variation: item.selectedVariation ? {
+          id: item.selectedVariation._id,
+          name: item.selectedVariation.name,
+          price: item.selectedVariation.price
+        } : null,
+        addons: item.selectedAddons?.map(addon => ({
+          id: addon._id,
+          name: addon.name,
+          price: addon.price
+        })) || []
       }));
       
       const gstAmounts = getGstAmounts();
@@ -300,27 +355,6 @@ export const useOrderManagement = (location) => {
       };
       
       const orderResponse = await axios.post('/api/inroom-orders/create', finalOrderData, {
-        headers: { 
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      
-      // Create KOT record
-      const kotData = {
-        kotNumber: `KOT-${Date.now()}`,
-        orderId: orderResponse.data._id,
-        orderType: 'restaurant',
-        tableNo: orderData.tableNo,
-        items: orderItems.map(item => ({
-          itemName: item.itemName,
-          quantity: item.quantity,
-          specialInstructions: item.note || ''
-        })),
-        status: 'pending'
-      };
-      
-      await axios.post('/api/kot/create', kotData, {
         headers: { 
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json'

@@ -57,7 +57,9 @@ const OrderHistory = () => {
   const formatCurrency = (amount) => `₹${amount.toFixed(2)}`;
 
   const getFinalAmount = (order) => {
-    const subtotal = order.subtotal || order.totalAmount;
+    const itemsTotal = (order.items || []).reduce((sum, item) => sum + (item.itemTotal || 0), 0);
+    const extraItemsTotal = (order.extraItems || []).reduce((sum, item) => sum + (item.itemTotal || 0), 0);
+    const subtotal = itemsTotal + extraItemsTotal;
     const discountAmount = order.discount?.percentage ? (subtotal * order.discount.percentage / 100) : 0;
     return subtotal - discountAmount;
   };
@@ -325,20 +327,20 @@ const OrderHistory = () => {
                     <td className="px-3 lg:px-4 py-3">
                       <div className="flex flex-wrap gap-1 max-w-xs">
                         {expandedOrder === order._id ? (
-                          order.items?.map((item, idx) => (
+                          [...(order.items || []), ...(order.extraItems || [])].map((item, idx) => (
                             <span key={idx} className="bg-white/30 backdrop-blur-md text-gray-900 text-xs px-2 py-1 rounded whitespace-nowrap">
                               {item.quantity}x {item.name}
                             </span>
                           ))
                         ) : (
                           <>
-                            {order.items?.slice(0, 2).map((item, idx) => (
+                            {[...(order.items || []), ...(order.extraItems || [])].slice(0, 2).map((item, idx) => (
                               <span key={idx} className="bg-white/30 backdrop-blur-md text-gray-900 text-xs px-2 py-1 rounded whitespace-nowrap">
                                 {item.quantity}x {item.name}
                               </span>
                             ))}
-                            {order.items?.length > 2 && (
-                              <span className="text-xs text-gray-700 whitespace-nowrap">+{order.items.length - 2} more</span>
+                            {([...(order.items || []), ...(order.extraItems || [])].length > 2) && (
+                              <span className="text-xs text-gray-700 whitespace-nowrap">+{[...(order.items || []), ...(order.extraItems || [])].length - 2} more</span>
                             )}
                           </>
                         )}
