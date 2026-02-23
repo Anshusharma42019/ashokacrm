@@ -120,6 +120,7 @@ const Register = ({ onSuccess }) => {
           />
         </div>
 
+
         <div>
           <label className="block text-sm font-medium mb-1" style={{ color: 'hsl(45, 100%, 20%)' }}>Phone Number</label>
           <input
